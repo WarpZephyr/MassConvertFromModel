@@ -1,0 +1,2 @@
+OutputToConsole=true // Default: true
+OutputToLog=false 	 // Default: true

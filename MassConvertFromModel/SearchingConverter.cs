@@ -5,6 +5,7 @@ namespace MassConvertFromModel
     public class SearchingConverter
     {
         public List<string> Log = new List<string>();
+        public SearchingConverterConfig Config = new SearchingConverterConfig();
 
         /// <summary>
         /// Search a folder recursively.
@@ -88,7 +89,7 @@ namespace MassConvertFromModel
             }
             catch (Exception ex)
             {
-                Log.Add($"Error Converting {fileName}: \"{ex.Message}\"");
+                Output($"Error Converting {fileName}: \"{ex.Message}\"");
             }
         }
 
@@ -98,11 +99,11 @@ namespace MassConvertFromModel
             {
                 if (AssimpExport.ExportModel(model, outFolder, $"{outFolder}\\{fileName}.fbx", "fbx"))
                 {
-                    Log.Add($"Converted {fileName}");
+                    Output($"Converted {fileName}");
                 }
                 else
                 {
-                    Log.Add($"Failed Converting {fileName}");
+                    Output($"Failed Converting {fileName}");
                 }
                 return true;
             }
@@ -115,11 +116,11 @@ namespace MassConvertFromModel
             {
                 if (AssimpExport.ExportModel(model, outFolder, $"{outFolder}\\{fileName}.fbx", "fbx"))
                 {
-                    Log.Add($"Converted {fileName}");
+                    Output($"Converted {fileName}");
                 }
                 else
                 {
-                    Log.Add($"Failed {fileName}");
+                    Output($"Failed {fileName}");
                 }
                 return true;
             }
@@ -132,11 +133,11 @@ namespace MassConvertFromModel
             {
                 if (AssimpExport.ExportModel(model, outFolder, $"{outFolder}\\{fileName}.fbx", "fbx"))
                 {
-                    Log.Add($"Converted {fileName}");
+                    Output($"Converted {fileName}");
                 }
                 else
                 {
-                    Log.Add($"Failed {fileName}");
+                    Output($"Failed {fileName}");
                 }
                 return true;
             }
@@ -149,20 +150,33 @@ namespace MassConvertFromModel
             {
                 if (AssimpExport.ExportModel(model, outFolder, $"{outFolder}\\{fileName}.fbx", "fbx"))
                 {
-                    Log.Add($"Converted {fileName}");
+                    Output($"Converted {fileName}");
                 }
                 else
                 {
-                    Log.Add($"Failed {fileName}");
+                    Output($"Failed {fileName}");
                 }
                 return true;
             }
             return false;
         }
 
+        void Output(string value)
+        {
+            if (Config.OutputToConsole)
+            {
+                Console.WriteLine(value);
+            }
+
+            if (Config.OutputToLog)
+            {
+                Log.Add(value);
+            }
+        }
+
         public void WriteLog(string folder)
         {
-            File.WriteAllLines($"{folder}\\log-{DateTime.Now:MM-dd-yyyy}.txt", Log);
+            File.WriteAllLines($"{folder}\\log-{DateTime.Now:MMddyyyy-hhmmss}.txt", Log);
         }
     }
 }

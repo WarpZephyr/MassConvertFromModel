@@ -14,6 +14,14 @@ namespace MassConvertFromModel
             }
         }
 
+        public static void EnsureFileExists(string path)
+        {
+            if (!File.Exists(path))
+            {
+                File.Create(path);
+            }
+        }
+
         public static string GetExtensionless(string name)
         {
             string extensionlessName = $"{Path.GetFileNameWithoutExtension(name)}";

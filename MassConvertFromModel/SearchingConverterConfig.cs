@@ -1,0 +1,30 @@
+﻿namespace MassConvertFromModel
+{
+    public class SearchingConverterConfig
+    {
+        public bool OutputToConsole { get; set; } = true;
+        public bool OutputToLog { get; set; } = true;
+
+        public void Parse(string path)
+        {
+            var parser = new ConfigParser();
+            parser.Parse(path);
+
+            if (parser.ValueDictionary.TryGetValue(nameof(OutputToConsole).ToLower(), out string? outputToConsoleStr))
+            {
+                if (bool.TryParse(outputToConsoleStr, out bool resultBool))
+                {
+                    OutputToConsole = resultBool;
+                }
+            }
+
+            if (parser.ValueDictionary.TryGetValue(nameof(OutputToLog).ToLower(), out string? outputToLogStr))
+            {
+                if (bool.TryParse(outputToLogStr, out bool resultBool))
+                {
+                    OutputToLog = resultBool;
+                }
+            }
+        }
+    }
+}

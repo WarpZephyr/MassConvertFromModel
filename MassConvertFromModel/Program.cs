@@ -4,8 +4,21 @@
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Searching.....");
+            Console.WriteLine("Initialization...");
             var searcher = new SearchingConverter();
+            string? folder = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            if (folder == null)
+            {
+                Console.WriteLine("Error: Could not get the name of the folder this program is in to check config.\nUsing default config.");
+            }
+            else
+            {
+                string configPath = $"{folder}\\config.txt";
+                PathHandler.EnsureFileExists(configPath);
+                searcher.Config.Parse(configPath);
+            }
+
+            Console.WriteLine("Searching...");
             foreach (string path in args)
             {
                 if (Directory.Exists(path))
@@ -18,16 +31,7 @@
                 }
             }
 
-            string? folder = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            if (folder == null)
-            {
-                Console.WriteLine("Error: Could not get the name of the folder this program is in to write log.\nPrinting to console instead.");
-                foreach (string str in searcher.Log)
-                {
-                    Console.WriteLine(str);
-                }
-            }
-            else
+            if (searcher.Config.OutputToLog && folder != null)
             {
                 searcher.WriteLog(folder);
             }
