@@ -88,7 +88,7 @@ namespace MassConvertFromModel
             }
             catch (Exception ex)
             {
-                Log.Add($"Error while converting {fileName}: \"{ex.Message}\"");
+                Log.Add($"Error Converting {fileName}: \"{ex.Message}\"");
             }
         }
 
