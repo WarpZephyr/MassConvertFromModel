@@ -102,7 +102,7 @@ namespace MassConvertFromModel
                 }
                 else
                 {
-                    Log.Add($"Failed {fileName}");
+                    Log.Add($"Failed Converting {fileName}");
                 }
                 return true;
             }
