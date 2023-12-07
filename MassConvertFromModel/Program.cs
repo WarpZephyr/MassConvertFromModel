@@ -20,6 +20,7 @@
             }
             else
             {
+                Console.WriteLine("Parsing config...");
                 string configPath = $"{folder}\\config.txt";
                 PathHandler.EnsureFileExists(configPath);
                 searcher.Config.Parse(configPath);
