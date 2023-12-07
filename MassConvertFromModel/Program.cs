@@ -4,6 +4,13 @@
     {
         static void Main(string[] args)
         {
+            if (args.Length == 0)
+            {
+                Console.WriteLine("This program does not have a UI, please drag and drop files or folders onto it.");
+                Console.ReadLine();
+                return;
+            }
+
             Console.WriteLine("Initialization...");
             var searcher = new SearchingConverter();
             string? folder = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
