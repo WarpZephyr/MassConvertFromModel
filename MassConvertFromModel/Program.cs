@@ -82,7 +82,15 @@ namespace MassConvertFromModel
             {
                 foreach (var file in binder.Files)
                 {
-                    if (Supported(file.Bytes))
+                    if (BND3.Is(file.Bytes))
+                    {
+                        ConvertBinder(BND3.Read(file.Bytes), $"{outFolder}\\{GetExtensionless(file.Name)}-BND3");
+                    }
+                    else if (BND4.Is(file.Bytes))
+                    {
+                        ConvertBinder(BND4.Read(file.Bytes), $"{outFolder}\\{GetExtensionless(file.Name)}-BND4");
+                    }
+                    else if (Supported(file.Bytes))
                     {
                         Convert(file.Bytes, file.Name, outFolder);
                     }
