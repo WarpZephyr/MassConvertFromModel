@@ -1,56 +1,62 @@
-﻿using System.IO;
-using System.Collections.Generic;
-using SoulsFormats;
+﻿using SoulsFormats;
 using Assimp;
 using Matrix4x4 = System.Numerics.Matrix4x4;
 
 namespace MassConvertFromModel
 {
     /// <summary>
-    /// Class for exporting SoulsFormats models using Assimp.
+    /// Exports SoulsFormats models using AssimpNet.
     /// </summary>
     internal static class AssimpExport
     {
+        public static bool ExportModel(FLVER2 model, string outFolder, string outPath, string type)
+        {
+            Scene scene = ToAssimpScene(model);
+            PathHandler.EnsureFolderExists(outFolder);
+            return new AssimpContext().ExportFile(scene, outPath, type);
+        }
+
+        public static bool ExportModel(FLVER0 model, string outFolder, string outPath, string type)
+        {
+            Scene scene = ToAssimpScene(model);
+            PathHandler.EnsureFolderExists(outFolder);
+            return new AssimpContext().ExportFile(scene, outPath, type);
+        }
+
+        public static bool ExportModel(MDL4 model, string outFolder, string outPath, string type)
+        {
+            Scene scene = ToAssimpScene(model);
+            PathHandler.EnsureFolderExists(outFolder);
+            return new AssimpContext().ExportFile(scene, outPath, type);
+        }
+
+        public static bool ExportModel(SMD4 model, string outFolder, string outPath, string type)
+        {
+            Scene scene = ToAssimpScene(model);
+            PathHandler.EnsureFolderExists(outFolder);
+            return new AssimpContext().ExportFile(scene, outPath, type);
+        }
+
         public static bool ExportModel(byte[] bytes, string outFolder, string outPath, string type)
         {
-            string backupPath = $"{outPath}.bak";
-
-            // Read model and make scene
-            Scene scene;
             if (FLVER2.IsRead(bytes, out FLVER2 flver2))
             {
-                scene = ToAssimpScene(flver2);
+                return ExportModel(flver2, outFolder, outPath, type);
             }
             else if (FLVER0.IsRead(bytes, out FLVER0 flver0))
             {
-                scene = ToAssimpScene(flver0);
+                return ExportModel(flver0, outFolder, outPath, type);
             }
             else if (MDL4.IsRead(bytes, out MDL4 mdl4))
             {
-                scene = ToAssimpScene(mdl4);
+                return ExportModel(mdl4, outFolder, outPath, type);
             }
             else if (SMD4.IsRead(bytes, out SMD4 smd4))
             {
-                scene = ToAssimpScene(smd4);
-            }
-            else
-            {
-                return false;
+                return ExportModel(smd4, outFolder, outPath, type);
             }
 
-            // Backup file
-            if (File.Exists(outPath))
-                if (!File.Exists(backupPath))
-                    File.Move(outPath, backupPath);
-
-            // Make directory
-            if (!Directory.Exists(outFolder))
-            {
-                Directory.CreateDirectory(outFolder);
-            }
-
-            // Export scene to save path
-            return new AssimpContext().ExportFile(scene, outPath, type);
+            return false;
         }
 
         /// <summary>
