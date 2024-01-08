@@ -82,22 +82,29 @@ namespace MassConvertFromModel
         {
             try
             {
-                if (TryFlver2(bytes, fileName, outFolder)) return;
-                else if (TryFlver0(bytes, fileName, outFolder)) return;
-                else if (TryMdl4(bytes, fileName, outFolder)) return;
-                else if (TrySmd4(bytes, fileName, outFolder)) return;
+                string outPath = $"{outFolder}\\{fileName}.fbx";
+                if (File.Exists(outPath) && !Config.ReplaceExistingFiles)
+                {
+                    Output($"Skipping {fileName}");
+                    return;
+                }
+
+                if (TryFlver2(bytes, fileName, outFolder, outPath)) return;
+                else if (TryFlver0(bytes, fileName, outFolder, outPath)) return;
+                else if (TryMdl4(bytes, fileName, outFolder, outPath)) return;
+                else if (TrySmd4(bytes, fileName, outFolder, outPath)) return;
             }
             catch (Exception ex)
             {
-                Output($"Error Converting {fileName}: \"{ex.Message}\"");
+                Output($"Error Converting {fileName}: \"{ex.Message}\" \"{ex.StackTrace}\"");
             }
         }
 
-        bool TryFlver2(byte[] bytes, string fileName, string outFolder)
+        bool TryFlver2(byte[] bytes, string fileName, string outFolder, string outPath)
         {
             if (FLVER2.IsRead(bytes, out FLVER2 model))
             {
-                if (AssimpExport.ExportModel(model, outFolder, $"{outFolder}\\{fileName}.fbx", "fbx"))
+                if (AssimpExport.ExportModel(model, outFolder, outPath, "fbx"))
                 {
                     Output($"Converted {fileName}");
                 }
@@ -110,11 +117,11 @@ namespace MassConvertFromModel
             return false;
         }
 
-        bool TryFlver0(byte[] bytes, string fileName, string outFolder)
+        bool TryFlver0(byte[] bytes, string fileName, string outFolder, string outPath)
         {
             if (FLVER0.IsRead(bytes, out FLVER0 model))
             {
-                if (AssimpExport.ExportModel(model, outFolder, $"{outFolder}\\{fileName}.fbx", "fbx"))
+                if (AssimpExport.ExportModel(model, outFolder, outPath, "fbx"))
                 {
                     Output($"Converted {fileName}");
                 }
@@ -127,11 +134,11 @@ namespace MassConvertFromModel
             return false;
         }
 
-        bool TryMdl4(byte[] bytes, string fileName, string outFolder)
+        bool TryMdl4(byte[] bytes, string fileName, string outFolder, string outPath)
         {
             if (MDL4.IsRead(bytes, out MDL4 model))
             {
-                if (AssimpExport.ExportModel(model, outFolder, $"{outFolder}\\{fileName}.fbx", "fbx"))
+                if (AssimpExport.ExportModel(model, outFolder, outPath, "fbx"))
                 {
                     Output($"Converted {fileName}");
                 }
@@ -144,11 +151,11 @@ namespace MassConvertFromModel
             return false;
         }
 
-        bool TrySmd4(byte[] bytes, string fileName, string outFolder)
+        bool TrySmd4(byte[] bytes, string fileName, string outFolder, string outPath)
         {
             if (SMD4.IsRead(bytes, out SMD4 model))
             {
-                if (AssimpExport.ExportModel(model, outFolder, $"{outFolder}\\{fileName}.fbx", "fbx"))
+                if (AssimpExport.ExportModel(model, outFolder, outPath, "fbx"))
                 {
                     Output($"Converted {fileName}");
                 }

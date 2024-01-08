@@ -121,9 +121,9 @@ namespace MassConvertFromModel
                     // If the mesh has bones set the weights of this vertex to the correct bone
                     if (hasBones)
                     {
-                        // Get the local bone indice from NormalW then the bone array bone indice from the mesh
-                        var boneIndice = mesh.BoneIndices[vertex.NormalW];
-                        var bone = model.Bones[boneIndice];
+                        // Get the local bone index from NormalW then the bone array bone index from the mesh
+                        var boneIndex = mesh.BoneIndices[vertex.NormalW];
+                        var bone = model.Bones[boneIndex];
                         var transform = bone.ComputeTransform(model.Bones);
 
                         newMesh.Vertices.Add(vertex.Position.ToAssimpVector3D(transform));
@@ -135,19 +135,19 @@ namespace MassConvertFromModel
                         }
 
                         // If the bone map does not already have the bone add it
-                        if (!boneMap.ContainsKey(boneIndice))
+                        if (!boneMap.ContainsKey(boneIndex))
                         {
                             var aiBone = new Bone();
-                            var boneNode = boneArray[boneIndice];
+                            var boneNode = boneArray[boneIndex];
                             aiBone.Name = boneNode.Name;
 
                             Matrix4x4.Invert(transform, out Matrix4x4 transformInverse);
                             aiBone.OffsetMatrix = transformInverse.ToAssimpMatrix4x4();
-                            boneMap.Add(boneIndice, aiBone);
+                            boneMap.Add(boneIndex, aiBone);
                         }
 
                         // Add this vertex weight to it's bone
-                        boneMap[boneIndice].VertexWeights.Add(new VertexWeight(vertexIndex, 1f));
+                        boneMap[boneIndex].VertexWeights.Add(new VertexWeight(vertexIndex, 1f));
                     }
                     else
                     {

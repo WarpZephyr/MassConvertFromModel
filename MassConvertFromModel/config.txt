@@ -1,2 +1,3 @@
-OutputToConsole=true // Default: true
-OutputToLog=false 	 // Default: true
+OutputToConsole=true 		// Default: true
+OutputToLog=true 	 		// Default: true
+ReplaceExistingFiles=true	// Default: true
