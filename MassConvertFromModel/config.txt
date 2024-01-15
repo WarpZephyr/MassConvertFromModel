@@ -1,3 +1,55 @@
-OutputToConsole=true 		// Default: true
-OutputToLog=true 	 		// Default: true
-ReplaceExistingFiles=true	// Default: true
+// Whether or not to output text to the console.
+// Default: true
+OutputToConsole=true
+
+// Whether or not to output text to a new log file.
+// Default: true
+OutputToLog=true
+
+// Whether or not to output text when textures are found.
+// Default: true
+OutputTexturesFound=true
+
+// Whether or not to replace already existing files in the output path.
+// Default: true
+ReplaceExistingFiles=true
+
+// Whether or not to search for MDL4 models.
+// Default: true
+SearchForMDL4=true
+
+// Whether or not to search for SMD4 shadow mesh models.
+// Default: true
+SearchForSMD4=true
+
+// Whether or not to search for FLVER0 models.
+// Default: true
+SearchForFlver0=true
+
+// Whether or not to search for FLVER2 models.
+// Default: true
+SearchForFlver2=true
+
+// Whether or not to search for textures. Only TPF is supported for now. Xbox 360 TPFs will be extracted wrong.
+// Default: true
+SearchForTextures=true
+
+// Whether or not to search in BND3 binder archives.
+// Default: true
+SearchBND3=true
+
+// Whether or not to search in BND4 binder archives.
+// Default: true
+SearchBND4=true
+
+// Whether or not to search in Armored Core 4 Zero3 split container archives. Performance heavy, disable when not in use.
+// Default: false
+SearchZero3=false
+
+// Whether or not to recursively search archives in BND3 and BND4 binder archives.
+// Default: true
+BinderRecursiveSearch=true
+
+// The chosen Assimp export format ID, this will not allow you to export to FromSoftware models.
+// Default: fbx
+ExportFormat=fbx

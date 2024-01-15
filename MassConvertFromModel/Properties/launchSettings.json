@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MassConvertFromModel": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\WarpZephyr\\Documents\\Programs\\RPCS3\\games\\BLUS30027\\PS3_GAME\\USRDIR\\bind\\garage\\parts\""
+    }
+  }
+}

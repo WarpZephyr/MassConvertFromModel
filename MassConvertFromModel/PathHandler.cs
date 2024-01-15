@@ -22,6 +22,11 @@ namespace MassConvertFromModel
             }
         }
 
+        public static string GetDirectoryName(string path)
+        {
+            return Path.GetDirectoryName(path) ?? throw new Exception($"Getting folder name returned null for: {path}");
+        }
+
         public static string GetExtensionless(string name)
         {
             string extensionlessName = $"{Path.GetFileNameWithoutExtension(name)}";
