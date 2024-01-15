@@ -1,5 +1,5 @@
 # MassConvertFromModel
-Mass converts the following FromSoftware model types to FBX:  
+Mass converts the following FromSoftware model types to AssimpNet to be exported:  
 FLVER0  
 FLVER2  
 MDL4  
@@ -14,7 +14,7 @@ Will be slow when mass converting many files.
 
 # Usage
 1. Drag and drop a folder or file onto the exe  
-2. Import FBX in Blender with scale setting set to 100.0  
+2. If using FBX, Import FBX into Blender with scale setting set to 100.0  
 
 # Building
 1. [Download SoulsFormatsExtended][0]  
