@@ -5,7 +5,6 @@ FLVER2
 MDL4  
 SMD4  
 
-Not all models are supported, only ones that weight to a single bone, other models will not convert right.  
 SMD4 is not fully explored and may not convert right.  
 
 Uses AssimpNet which has limitations regarding FLVER currently.  
