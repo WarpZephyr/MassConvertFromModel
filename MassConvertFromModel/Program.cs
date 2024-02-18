@@ -1,4 +1,6 @@
-﻿namespace MassConvertFromModel
+﻿using MassConvertFromModel.Handlers;
+
+namespace MassConvertFromModel
 {
     internal class Program
     {
@@ -13,15 +15,19 @@
 
             Console.WriteLine("Initialization...");
             var searcher = new SearchingConverter();
-            string? folder = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            if (folder == null)
+
+            string executablePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string? folder = Path.GetDirectoryName(executablePath);
+
+            if (folder == string.Empty)
             {
                 Console.WriteLine("Error: Could not get the name of the folder this program is in to check config.\nUsing default config.");
             }
             else
             {
+                folder ??= executablePath;
                 Console.WriteLine("Parsing config...");
-                string configPath = $"{folder}\\config.txt";
+                string configPath = PathHandler.Combine(folder, "config.txt");
                 PathHandler.EnsureFileExists(configPath);
                 searcher.Config.Parse(configPath);
             }

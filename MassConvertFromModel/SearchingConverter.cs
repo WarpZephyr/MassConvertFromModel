@@ -1,4 +1,5 @@
 ﻿using FromAssimp;
+using MassConvertFromModel.Handlers;
 using SoulsFormats;
 using SoulsFormats.AC4;
 
@@ -49,15 +50,15 @@ namespace MassConvertFromModel
                     zero3 = Zero3.Read(path);
                 }
 
-                SearchZero3(zero3, $"{folder}\\{PathHandler.GetExtensionless(path)}");
+                SearchZero3(zero3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
             else if (Config.SearchBND3 && BND3.IsRead(path, out BND3 bnd3))
             {
-                SearchBinder(bnd3, $"{folder}\\{PathHandler.GetExtensionless(path)}");
+                SearchBinder(bnd3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
             if (Config.SearchBND4 && BND4.IsRead(path, out BND4 bnd4))
             {
-                SearchBinder(bnd4, $"{folder}\\{PathHandler.GetExtensionless(path)}");
+                SearchBinder(bnd4, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
             else
             {
@@ -76,15 +77,15 @@ namespace MassConvertFromModel
             {
                 if (Config.BinderRecursiveSearch && Config.SearchBND3 && BND3.IsRead(file.Bytes, out BND3 bnd3))
                 {
-                    SearchBinder(bnd3, $"{outFolder}\\{PathHandler.GetExtensionless(file.Name)}");
+                    SearchBinder(bnd3, PathHandler.Combine(outFolder, PathHandler.GetWithoutExtensions(file.Name)));
                 }
                 else if (Config.BinderRecursiveSearch && Config.SearchBND4 && BND4.IsRead(file.Bytes, out BND4 bnd4))
                 {
-                    SearchBinder(bnd4, $"{outFolder}\\{PathHandler.GetExtensionless(file.Name)}");
+                    SearchBinder(bnd4, PathHandler.Combine(outFolder, PathHandler.GetWithoutExtensions(file.Name)));
                 }
                 else
                 {
-                    Convert(file.Bytes, Path.GetFileName(file.Name), $"{outFolder}\\{PathHandler.GetDirectoryName(file.Name)}");
+                    Convert(file.Bytes, Path.GetFileName(file.Name), PathHandler.Combine(outFolder, PathHandler.GetDirectoryName(file.Name)));
                 }
             }
         }
@@ -95,15 +96,15 @@ namespace MassConvertFromModel
             {
                 if (Config.SearchBND3 && BND3.IsRead(file.Bytes, out BND3 bnd3))
                 {
-                    SearchBinder(bnd3, $"{outFolder}\\{PathHandler.GetExtensionless(file.Name)}");
+                    SearchBinder(bnd3, PathHandler.Combine(outFolder, PathHandler.GetWithoutExtensions(file.Name)));
                 }
                 else if (Config.SearchBND4 && BND4.IsRead(file.Bytes, out BND4 bnd4))
                 {
-                    SearchBinder(bnd4, $"{outFolder}\\{PathHandler.GetExtensionless(file.Name)}");
+                    SearchBinder(bnd4, PathHandler.Combine(outFolder, PathHandler.GetWithoutExtensions(file.Name)));
                 }
                 else
                 {
-                    Convert(file.Bytes, Path.GetFileName(file.Name), $"{outFolder}\\{PathHandler.GetDirectoryName(file.Name)}");
+                    Convert(file.Bytes, Path.GetFileName(file.Name), PathHandler.Combine(outFolder, PathHandler.GetDirectoryName(file.Name)));
                 }
             }
         }
@@ -120,7 +121,7 @@ namespace MassConvertFromModel
             try
             {
 #endif
-            string outPath = $"{outFolder}\\{fileName}.{FromAssimpContext.GetFormatExtension(Config.ExportFormat)}";
+            string outPath = PathHandler.Combine(outFolder, $"{fileName}.{FromAssimpContext.GetFormatExtension(Config.ExportFormat)}");
             if (!Config.ReplaceExistingFiles && File.Exists(outPath))
             {
                 Output($"Skipping {fileName}");
@@ -133,16 +134,24 @@ namespace MassConvertFromModel
             else if (Config.SearchForSMD4 && TrySmd4(bytes, fileName, outFolder, outPath)) return;
             else if (Config.SearchForTextures && TPF.IsRead(bytes, out TPF tpf))
             {
-                PathHandler.EnsureFolderExists(outFolder);
+                fileName = PathHandler.GetWithoutExtensions(fileName);
+                if (!fileName.EndsWith("_t"))
+                {
+                    fileName += "_t";
+                }
+
+                outFolder = PathHandler.Combine(outFolder, fileName);
+                Directory.CreateDirectory(outFolder);
                 foreach (var texture in tpf.Textures)
                 {
+                    outPath = PathHandler.Combine(outFolder, $"{texture.Name}.dds");
                     if (tpf.Platform == TPF.TPFPlatform.PC)
                     {
-                        File.WriteAllBytes($"{outFolder}\\{texture.Name}.dds", texture.Bytes);
+                        File.WriteAllBytes(outPath, texture.Bytes);
                     }
                     else
                     {
-                        File.WriteAllBytes($"{outFolder}\\{texture.Name}.dds", texture.Headerize());
+                        File.WriteAllBytes(outPath, texture.Headerize());
                     }
                 }
 
@@ -168,7 +177,7 @@ namespace MassConvertFromModel
         {
             if (FLVER2.IsRead(bytes, out FLVER2 model))
             {
-                PathHandler.EnsureFolderExists(outFolder);
+                Directory.CreateDirectory(outFolder);
                 if (new FromAssimpContext().ImportFileFromFlver2ThenExport(model, outPath, Config.ExportFormat))
                 {
                     Output($"Converted {fileName}");
@@ -186,7 +195,7 @@ namespace MassConvertFromModel
         {
             if (FLVER0.IsRead(bytes, out FLVER0 model))
             {
-                PathHandler.EnsureFolderExists(outFolder);
+                Directory.CreateDirectory(outFolder);
                 if (new FromAssimpContext().ImportFileFromFlver0ThenExport(model, outPath, Config.ExportFormat))
                 {
                     Output($"Converted {fileName}");
@@ -204,7 +213,7 @@ namespace MassConvertFromModel
         {
             if (MDL4.IsRead(bytes, out MDL4 model))
             {
-                PathHandler.EnsureFolderExists(outFolder);
+                Directory.CreateDirectory(outFolder);
                 if (new FromAssimpContext().ImportFileFromMdl4ThenExport(model, outPath, Config.ExportFormat))
                 {
                     Output($"Converted {fileName}");
@@ -222,7 +231,7 @@ namespace MassConvertFromModel
         {
             if (SMD4.IsRead(bytes, out SMD4 model))
             {
-                PathHandler.EnsureFolderExists(outFolder);
+                Directory.CreateDirectory(outFolder);
                 if (new FromAssimpContext().ImportFileFromSmd4ThenExport(model, outPath, Config.ExportFormat))
                 {
                     Output($"Converted {fileName}");
@@ -251,7 +260,7 @@ namespace MassConvertFromModel
 
         public void WriteLog(string folder)
         {
-            File.WriteAllLines($"{folder}\\log-{DateTime.Now:MMddyyyy-hhmmss}.txt", Log);
+            File.WriteAllLines(PathHandler.Combine(folder, $"log-{DateTime.Now:MMddyyyy-hhmmss}.txt"), Log);
         }
     }
 }
