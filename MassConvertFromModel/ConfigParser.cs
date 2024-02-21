@@ -1,15 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MassConvertFromModel
+﻿namespace MassConvertFromModel
 {
+    /// <summary>
+    /// A parser for simple configuration files.
+    /// </summary>
     public class ConfigParser
     {
-        public Dictionary<string, string> ValueDictionary = new Dictionary<string, string>();
+        /// <summary>
+        /// A dictionary containing read property to value pairs.
+        /// </summary>
+        public Dictionary<string, string> ValueDictionary = [];
 
+        /// <summary>
+        /// Parse a config from the given path.
+        /// </summary>
+        /// <param name="path">A file path to the config to parse.</param>
         public void Parse(string path)
         {
             string[] lines = File.ReadAllLines(path);
@@ -23,7 +27,12 @@ namespace MassConvertFromModel
             }
         }
 
-        private string ParseLine(string line)
+        /// <summary>
+        /// Parse a single line in a config and clean it of unnecessary things.
+        /// </summary>
+        /// <param name="line">The line to parse.</param>
+        /// <returns>The parsed line.</returns>
+        private static string ParseLine(string line)
         {
             string parsedLine = line;
             int commentIndex = line.IndexOf("//");
@@ -33,13 +42,17 @@ namespace MassConvertFromModel
             }
             else if (commentIndex > 0)
             {
-                parsedLine = parsedLine.Substring(0, commentIndex);
+                parsedLine = parsedLine[..commentIndex];
             }
 
             parsedLine = parsedLine.Trim();
             return parsedLine;
         }
 
+        /// <summary>
+        /// Parse a property and value pair from a single line for a config.
+        /// </summary>
+        /// <param name="parsedLine">The line to parse the property and value of.</param>
         private void ParseValue(string parsedLine)
         {
             string[] strs = parsedLine.Split('=', StringSplitOptions.TrimEntries);

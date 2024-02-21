@@ -47,7 +47,7 @@ namespace MassConvertFromModel
 
             if (searcher.Config.OutputToLog && folder != null)
             {
-                searcher.WriteLog(folder);
+                searcher.WriteLogToFolder(folder);
             }
 
             Console.WriteLine("Finished searching.");
