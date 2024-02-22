@@ -33,6 +33,12 @@ The models I saw using edge compressed vertex buffers also seem to have uncompre
 Currently I'm ignoring vertex buffers that are edge compressed as I cannot read them all correctly.  
 I have an idea of how they work, if anybody is interested in figuring the rest out, let me know.  
 
+Xbox 360 textures from TPF files are swizzled in a way that is not known quite yet.  
+They cannot be properly read.  
+
+I believe PS4 TPFs can be read, but I don't think my fork of SoulsFormats currently supports them.  
+I'll look into that in the future as apparently DSMapStudio does.  
+
 # Building
 1. [Download SoulsFormatsExtended][0]  
 1. [Download FromAssimp][1]  
