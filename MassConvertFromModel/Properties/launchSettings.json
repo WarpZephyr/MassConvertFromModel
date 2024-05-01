@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "MassConvertFromModel": {
-      "commandName": "Project",
-      "commandLineArgs": "\"A:\\Research\\Games\\FromSoftware\\Armored Core Verdict Day\\Xbox 360\\Armored Core Verdict Day\\model\\ac\\parts\\arm\\am0010\\am0010_m-bnd-dcx\\am0010.flv\""
-    }
-  }
-}
