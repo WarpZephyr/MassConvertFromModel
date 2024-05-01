@@ -1,5 +1,4 @@
 ﻿using FromAssimp;
-using FromAssimp.Extensions.Assimp;
 using MassConvertFromModel.Handlers;
 using SoulsFormats;
 using SoulsFormats.AC4;
@@ -27,13 +26,7 @@ namespace MassConvertFromModel
         /// <param name="path">The path to the folder.</param>
         public void SearchFolder(string path)
         {
-            var folders = Directory.EnumerateDirectories(path);
-            foreach (string folder in folders)
-            {
-                SearchFolder(folder);
-            }
-
-            var files = Directory.EnumerateFiles(path);
+            var files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
             foreach (string file in files)
             {
                 SearchFile(file);
@@ -46,7 +39,7 @@ namespace MassConvertFromModel
         /// <param name="path">The path to the file.</param>
         public void SearchFile(string path)
         {
-            string folder = $"{Path.GetDirectoryName(path)}";
+            string folder = PathHandler.GetDirectoryName(path);
 
             if (Config.SearchZero3 && Zero3.Is(path))
             {
@@ -67,7 +60,7 @@ namespace MassConvertFromModel
             {
                 SearchBinder(bnd3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
-            if (Config.SearchBND4 && BND4.IsRead(path, out BND4 bnd4))
+            else if (Config.SearchBND4 && BND4.IsRead(path, out BND4 bnd4))
             {
                 SearchBinder(bnd4, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
