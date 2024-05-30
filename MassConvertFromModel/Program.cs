@@ -14,7 +14,9 @@ namespace MassConvertFromModel
             }
 
             Console.WriteLine("Initialization...");
+            var textOutputConsole = new TextOutputConsole(bufferThreshold: 50);
             var searcher = new SearchingConverter();
+            searcher.WriteLine = textOutputConsole.WriteLine;
 
             string executablePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
             string? folder = Path.GetDirectoryName(executablePath);
@@ -44,6 +46,7 @@ namespace MassConvertFromModel
                     searcher.SearchFile(path);
                 }
             }
+            textOutputConsole.Finish();
 
             if (searcher.Config.OutputToLog && folder != null)
             {

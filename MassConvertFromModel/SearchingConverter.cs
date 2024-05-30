@@ -21,6 +21,11 @@ namespace MassConvertFromModel
         public SearchingConverterConfig Config = new SearchingConverterConfig();
 
         /// <summary>
+        /// The chosen delegate for writing a line to output.
+        /// </summary>
+        public Action<string> WriteLine = Console.WriteLine;
+
+        /// <summary>
         /// Search a folder recursively.
         /// </summary>
         /// <param name="path">The path to the folder.</param>
@@ -307,7 +312,7 @@ namespace MassConvertFromModel
         {
             if (Config.OutputToConsole)
             {
-                Console.WriteLine(value);
+                WriteLine(value);
             }
 
             if (Config.OutputToLog)
