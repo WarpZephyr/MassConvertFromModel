@@ -71,6 +71,11 @@
         public bool BinderRecursiveSearch { get; set; } = true;
 
         /// <summary>
+        /// Whether or not to do the check flip fix during FLVER0 face triangulation.
+        /// </summary>
+        public bool DoCheckFlip { get; set; } = false;
+
+        /// <summary>
         /// The chosen export format.
         /// </summary>
         public string ExportFormat { get; set; } = "fbx";
@@ -97,6 +102,7 @@
             SearchBND4 = SearchBoolProperty(parser, nameof(SearchBND4).ToLower(), SearchBND4);
             SearchZero3 = SearchBoolProperty(parser, nameof(SearchZero3).ToLower(), SearchZero3);
             BinderRecursiveSearch = SearchBoolProperty(parser, nameof(BinderRecursiveSearch).ToLower(), BinderRecursiveSearch);
+            DoCheckFlip = SearchBoolProperty(parser, nameof(DoCheckFlip).ToLower(), DoCheckFlip);
             ExportFormat = SearchStringProperty(parser, nameof(ExportFormat).ToLower(), ExportFormat);
         }
 

@@ -50,6 +50,11 @@ SearchZero3=false
 // Default: true
 BinderRecursiveSearch=true
 
+// Whether or not to do the check flip fix while triangulating faces for FLVER0.
+// Demon's Souls models might need this.
+// Default: false
+DoCheckFlip=false
+
 // The chosen Assimp export format ID, this will not allow you to export to FromSoftware models.
 // Default: fbx
 ExportFormat=fbx

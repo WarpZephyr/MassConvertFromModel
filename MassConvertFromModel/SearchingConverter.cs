@@ -1,7 +1,7 @@
-﻿using FromAssimp;
+﻿using Assimp;
+using FromAssimp;
 using MassConvertFromModel.Handlers;
 using SoulsFormats;
-using SoulsFormats.AC4;
 
 namespace MassConvertFromModel
 {
@@ -46,22 +46,23 @@ namespace MassConvertFromModel
         {
             string folder = PathHandler.GetDirectoryName(path);
 
-            if (Config.SearchZero3 && Zero3.Is(path))
+            if (Config.SearchZero3 && path.EndsWith(".000"))
             {
                 Zero3 zero3;
                 try
                 {
-                    zero3 = Zero3.ReadFromPacked(path);
+                    zero3 = Zero3.Read(path);
+                    SearchZero3(zero3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
+                    return;
                 }
                 catch
                 {
-                    Output($"Detected Zero3 {Path.GetFileName(path)} is not packed, attempting direct read...");
-                    zero3 = Zero3.Read(path);
+                    Output($"Detected potential Zero3 but it could not be read: {Path.GetFileName(path)}\n" +
+                        $"Attempting any other searches.");
                 }
-
-                SearchZero3(zero3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
-            else if (Config.SearchBND3 && BND3.IsRead(path, out BND3 bnd3))
+            
+            if (Config.SearchBND3 && BND3.IsRead(path, out BND3 bnd3))
             {
                 SearchBinder(bnd3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
@@ -171,6 +172,14 @@ namespace MassConvertFromModel
                 Directory.CreateDirectory(outFolder);
                 using var context = new FromAssimpContext();
                 var scene = FromAssimpContext.ImportFileFromFlver2(model);
+
+                // Set name of root node
+                scene.RootNode.Name = PathHandler.GetWithoutExtensions(fileName);
+                var oldRootNode = scene.RootNode;
+                var newRootNode = new Node("Root");
+                scene.RootNode = newRootNode;
+                newRootNode.Children.Add(oldRootNode);
+
                 if (context.ExportFile(scene, outPath, Config.ExportFormat))
                 {
                     Output($"Converted {fileName}");
@@ -198,7 +207,9 @@ namespace MassConvertFromModel
             {
                 Directory.CreateDirectory(outFolder);
                 using var context = new FromAssimpContext();
-                var scene = FromAssimpContext.ImportFileFromFlver0(model);
+                context.DoCheckFlip = Config.DoCheckFlip;
+                var scene = context.ImportFileFromFlver0(model);
+
                 if (context.ExportFile(scene, outPath, Config.ExportFormat))
                 {
                     Output($"Converted {fileName}");
