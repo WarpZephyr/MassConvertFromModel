@@ -9,7 +9,7 @@ namespace MassConvertFromModel
     /// <summary>
     /// Searches through files and archives recursively to convert them.
     /// </summary>
-    public class SearchingConverter
+    public class SearchingConverter : IDisposable
     {
         /// <summary>
         /// A log containing logged events according to the config.
@@ -32,10 +32,17 @@ namespace MassConvertFromModel
         public Action<string> WriteLine = Console.WriteLine;
 
         /// <summary>
+        /// Whether or not the converter has been disposed.
+        /// </summary>
+        public bool IsDisposed { get; private set; }
+
+        /// <summary>
         /// Sets the assimp context options from the config.
         /// </summary>
         public void SetContextOptions()
         {
+            // This doesn't feel ideal.
+            // Might need to refactor later.
             Context.DoCheckFlip = Config.DoCheckFlip;
             Context.ConvertUnitSystem = Config.ConvertUnitSystem;
             Context.PreferUnitSystemProperty = Config.PreferUnitSystemProperty;
@@ -336,5 +343,29 @@ namespace MassConvertFromModel
         /// <param name="path">The path to write the log to.</param>
         public void WriteLogToPath(string path)
             => File.WriteAllLines(path, Log);
+
+        /// <summary>
+        /// Disposes the converter.
+        /// </summary>
+        /// <param name="disposing">Whether or not to dispose.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!IsDisposed)
+            {
+                if (disposing)
+                {
+                    Context.Dispose();
+                }
+
+                IsDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }
