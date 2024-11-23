@@ -1,7 +1,8 @@
-﻿using FromAssimp;
+﻿using Assimp;
+using FromAssimp;
 using MassConvertFromModel.Handlers;
 using SoulsFormats;
-using SoulsFormats.AC4;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MassConvertFromModel
 {
@@ -21,9 +22,28 @@ namespace MassConvertFromModel
         public SearchingConverterConfig Config = new SearchingConverterConfig();
 
         /// <summary>
+        /// The assimp context converter.
+        /// </summary>
+        public FromAssimpContext Context = new FromAssimpContext();
+
+        /// <summary>
         /// The chosen delegate for writing a line to output.
         /// </summary>
         public Action<string> WriteLine = Console.WriteLine;
+
+        /// <summary>
+        /// Sets the assimp context options from the config.
+        /// </summary>
+        public void SetContextOptions()
+        {
+            Context.DoCheckFlip = Config.DoCheckFlip;
+            Context.ConvertUnitSystem = Config.ConvertUnitSystem;
+            Context.PreferUnitSystemProperty = Config.PreferUnitSystemProperty;
+            Context.MirrorX = Config.MirrorX;
+            Context.MirrorY = Config.MirrorY;
+            Context.MirrorZ = Config.MirrorZ;
+            Context.ImportScale = Config.Scale;
+        }
 
         /// <summary>
         /// Search a folder recursively.
@@ -46,22 +66,23 @@ namespace MassConvertFromModel
         {
             string folder = PathHandler.GetDirectoryName(path);
 
-            if (Config.SearchZero3 && Zero3.Is(path))
+            if (Config.SearchZero3 && path.EndsWith(".000"))
             {
                 Zero3 zero3;
                 try
                 {
-                    zero3 = Zero3.ReadFromPacked(path);
+                    zero3 = Zero3.Read(path);
+                    SearchZero3(zero3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
+                    return;
                 }
                 catch
                 {
-                    Output($"Detected Zero3 {Path.GetFileName(path)} is not packed, attempting direct read...");
-                    zero3 = Zero3.Read(path);
+                    Output($"Detected potential Zero3 but it could not be read: {Path.GetFileName(path)}\n" +
+                        $"Attempting any other searches.");
                 }
-
-                SearchZero3(zero3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
-            else if (Config.SearchBND3 && BND3.IsRead(path, out BND3 bnd3))
+            
+            if (Config.SearchBND3 && BND3.IsRead(path, out BND3 bnd3))
             {
                 SearchBinder(bnd3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
             }
@@ -142,11 +163,36 @@ namespace MassConvertFromModel
                 return;
             }
 
-            if (Config.SearchForFlver2 && TryFlver2(bytes, fileName, outFolder, outPath)) return;
-            else if (Config.SearchForFlver0 && TryFlver0(bytes, fileName, outFolder, outPath)) return;
-            else if (Config.SearchForMDL4 && TryMdl4(bytes, fileName, outFolder, outPath)) return;
-            else if (Config.SearchForSMD4 && TrySmd4(bytes, fileName, outFolder, outPath)) return;
-            else if (Config.SearchForTextures && TryTpf(bytes, fileName, outFolder)) return;
+            if ((Config.SearchForFlver2 && TryFlver2(bytes, out Scene? scene))
+                || (Config.SearchForFlver0 && TryFlver0(bytes, out scene))
+                || (Config.SearchForMDL4 && TryMdl4(bytes, out scene))
+                || (Config.SearchForSMD4 && TrySmd4(bytes, out scene)))
+            {
+                string rootName = Path.GetFileNameWithoutExtension(fileName);
+                rootName = Path.GetFileNameWithoutExtension(rootName);
+                scene.RootNode.Name = rootName;
+                if (Config.FixRootNode && FromAssimpContext.IsFbxFormat(Config.ExportFormat))
+                {
+                    // Can't set old root node parent unfortunately...
+                    var oldRootNode = scene.RootNode;
+                    var newRootNode = new Node("Root");
+                    newRootNode.Children.Add(oldRootNode);
+                    scene.RootNode = newRootNode;
+                }
+
+                if (Context.ExportFile(scene, outPath, Config.ExportFormat, Config.ExportFlags))
+                {
+                    Console.WriteLine($"Converted: {fileName}");
+                }
+                else
+                {
+                    Console.WriteLine($"Failed: {fileName}");
+                }
+            }
+            else if (Config.SearchForTextures)
+            {
+                TryTpf(bytes, fileName, outFolder);
+            }
 #if !DEBUG
             }
             catch (Exception ex)
@@ -157,114 +203,70 @@ namespace MassConvertFromModel
         }
 
         /// <summary>
-        /// Try to convert data as a <see cref="FLVER2"/>.
-        /// </summary>
-        /// <param name="bytes">The raw bytes of the data.</param>
-        /// <param name="fileName">The name of the file containing the data.</param>
-        /// <param name="outFolder">The folder to output converted <see cref="FLVER2"/> data to.</param>
-        /// <param name="outPath">The full output path to write the data to.</param>
-        /// <returns>Whether or not the data was read as a <see cref="FLVER2"/> and converted.</returns>
-        bool TryFlver2(byte[] bytes, string fileName, string outFolder, string outPath)
-        {
-            if (FLVER2.IsRead(bytes, out FLVER2 model))
-            {
-                Directory.CreateDirectory(outFolder);
-                using var context = new FromAssimpContext();
-                var scene = FromAssimpContext.ImportFileFromFlver2(model);
-                if (context.ExportFile(scene, outPath, Config.ExportFormat))
-                {
-                    Output($"Converted {fileName}");
-                }
-                else
-                {
-                    Output($"Failed {fileName}");
-                }
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Try to convert data as a <see cref="FLVER0"/>.
         /// </summary>
         /// <param name="bytes">The raw bytes of the data.</param>
-        /// <param name="fileName">The name of the file containing the data.</param>
-        /// <param name="outFolder">The folder to output converted <see cref="FLVER0"/> data to.</param>
-        /// <param name="outPath">The full output path to write the data to.</param>
         /// <returns>Whether or not the data was read as a <see cref="FLVER0"/> and converted.</returns>
-        bool TryFlver0(byte[] bytes, string fileName, string outFolder, string outPath)
+        bool TryFlver0(byte[] bytes, [NotNullWhen(true)] out Scene? scene)
         {
             if (FLVER0.IsRead(bytes, out FLVER0 model))
             {
-                Directory.CreateDirectory(outFolder);
-                using var context = new FromAssimpContext();
-                var scene = FromAssimpContext.ImportFileFromFlver0(model);
-                if (context.ExportFile(scene, outPath, Config.ExportFormat))
-                {
-                    Output($"Converted {fileName}");
-                }
-                else
-                {
-                    Output($"Failed {fileName}");
-                }
+                scene = Context.ImportFileFromFlver0(model);
                 return true;
             }
+
+            scene = null;
             return false;
         }
 
         /// <summary>
-        /// Try to convert data as an <see cref="MDL4"/>.
+        /// Try to convert data as a <see cref="FLVER2"/>.
         /// </summary>
         /// <param name="bytes">The raw bytes of the data.</param>
-        /// <param name="fileName">The name of the file containing the data.</param>
-        /// <param name="outFolder">The folder to output converted <see cref="MDL4"/> data to.</param>
-        /// <param name="outPath">The full output path to write the data to.</param>
-        /// <returns>Whether or not the data was read as an <see cref="MDL4"/> and converted.</returns>
-        bool TryMdl4(byte[] bytes, string fileName, string outFolder, string outPath)
+        /// <returns>Whether or not the data was read as a <see cref="FLVER2"/> and converted.</returns>
+        bool TryFlver2(byte[] bytes, [NotNullWhen(true)] out Scene? scene)
+        {
+            if (FLVER2.IsRead(bytes, out FLVER2 model))
+            {
+                scene = Context.ImportFileFromFlver2(model);
+                return true;
+            }
+
+            scene = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Try to convert data as a <see cref="MDL4"/>.
+        /// </summary>
+        /// <param name="bytes">The raw bytes of the data.</param>
+        /// <returns>Whether or not the data was read as a <see cref="MDL4"/> and converted.</returns>
+        bool TryMdl4(byte[] bytes, [NotNullWhen(true)] out Scene? scene)
         {
             if (MDL4.IsRead(bytes, out MDL4 model))
             {
-                Directory.CreateDirectory(outFolder);
-                using var context = new FromAssimpContext();
-                var scene = FromAssimpContext.ImportFileFromMdl4(model);
-                if (context.ExportFile(scene, outPath, Config.ExportFormat))
-                {
-                    Output($"Converted {fileName}");
-                }
-                else
-                {
-                    Output($"Failed {fileName}");
-                }
+                scene = Context.ImportFileFromMdl4(model);
                 return true;
             }
+
+            scene = null;
             return false;
         }
 
         /// <summary>
-        /// Try to convert data as an <see cref="SMD4"/>.
+        /// Try to convert data as a <see cref="SMD4"/>.
         /// </summary>
         /// <param name="bytes">The raw bytes of the data.</param>
-        /// <param name="fileName">The name of the file containing the data.</param>
-        /// <param name="outFolder">The folder to output converted <see cref="SMD4"/> data to.</param>
-        /// <param name="outPath">The full output path to write the data to.</param>
-        /// <returns>Whether or not the data was read as an <see cref="SMD4"/> and converted.</returns>
-        bool TrySmd4(byte[] bytes, string fileName, string outFolder, string outPath)
+        /// <returns>Whether or not the data was read as a <see cref="SMD4"/> and converted.</returns>
+        bool TrySmd4(byte[] bytes, [NotNullWhen(true)] out Scene? scene)
         {
             if (SMD4.IsRead(bytes, out SMD4 model))
             {
-                Directory.CreateDirectory(outFolder);
-                using var context = new FromAssimpContext();
-                var scene = FromAssimpContext.ImportFileFromSmd4(model);
-                if (context.ExportFile(scene, outPath, Config.ExportFormat))
-                {
-                    Output($"Converted {fileName}");
-                }
-                else
-                {
-                    Output($"Failed {fileName}");
-                }
+                scene = Context.ImportFileFromSmd4(model);
                 return true;
             }
+
+            scene = null;
             return false;
         }
 

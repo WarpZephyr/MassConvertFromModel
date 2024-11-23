@@ -32,7 +32,13 @@ namespace MassConvertFromModel
                 string configPath = PathHandler.Combine(folder, "config.txt");
                 PathHandler.EnsureFileExists(configPath);
                 searcher.Config.Parse(configPath);
+
+                string assimpFlagsPath = PathHandler.Combine(folder, "assimpflags.txt");
+                PathHandler.EnsureFileExists(assimpFlagsPath);
+                searcher.Config.ExportFlags = AssimpFlagsParser.Parse(assimpFlagsPath);
             }
+
+            searcher.SetContextOptions();
 
             Console.WriteLine("Searching...");
             foreach (string path in args)

@@ -1,4 +1,6 @@
-﻿namespace MassConvertFromModel
+﻿using Assimp;
+
+namespace MassConvertFromModel
 {
     /// <summary>
     /// A configuration for a <see cref="SearchingConverter"/>.
@@ -71,9 +73,54 @@
         public bool BinderRecursiveSearch { get; set; } = true;
 
         /// <summary>
+        /// Whether or not to do the check flip fix during FLVER0 face triangulation.
+        /// </summary>
+        public bool DoCheckFlip { get; set; } = false;
+
+        /// <summary>
+        /// Whether or not to automatically convert units depending on the export format.
+        /// </summary>
+        public bool ConvertUnitSystem { get; set; } = true;
+
+        /// <summary>
+        /// Whether or not to set unit system conversions into properties or metadata instead of manual conversions where possible.
+        /// </summary>
+        public bool PreferUnitSystemProperty { get; set; } = false;
+
+        /// <summary>
+        /// Fixes the root node of the scene before exporting.
+        /// </summary>
+        public bool FixRootNode { get; set; } = true;
+
+        /// <summary>
+        /// Whether or not to mirror the export across the X axis.
+        /// </summary>
+        public bool MirrorX { get; set; } = false;
+
+        /// <summary>
+        /// Whether or not to mirror the export across the Y axis.
+        /// </summary>
+        public bool MirrorY { get; set; } = false;
+
+        /// <summary>
+        /// Whether or not to mirror the export across the Z axis.
+        /// </summary>
+        public bool MirrorZ { get; set; } = true;
+
+        /// <summary>
+        /// The scale the export should be.
+        /// </summary>
+        public float Scale { get; set; } = 1.0f;
+
+        /// <summary>
         /// The chosen export format.
         /// </summary>
         public string ExportFormat { get; set; } = "fbx";
+
+        /// <summary>
+        /// The export flags to use in assimp.
+        /// </summary>
+        public PostProcessSteps ExportFlags { get; set; } = PostProcessSteps.None;
 
         /// <summary>
         /// Parse a config from the given path.
@@ -81,63 +128,31 @@
         /// <param name="path">A file path to the config to parse.</param>
         public void Parse(string path)
         {
-            var parser = new ConfigParser();
+            var parser = new DictionaryConfigParser();
             parser.Parse(path);
 
-            OutputToConsole = SearchBoolProperty(parser, nameof(OutputToConsole).ToLower(), OutputToConsole);
-            OutputToLog = SearchBoolProperty(parser, nameof(OutputToLog).ToLower(), OutputToLog);
-            OutputTexturesFound = SearchBoolProperty(parser, nameof(OutputTexturesFound).ToLower(), OutputTexturesFound);
-            ReplaceExistingFiles = SearchBoolProperty(parser, nameof(ReplaceExistingFiles).ToLower(), ReplaceExistingFiles);
-            SearchForMDL4 = SearchBoolProperty(parser, nameof(SearchForMDL4).ToLower(), SearchForMDL4);
-            SearchForSMD4 = SearchBoolProperty(parser, nameof(SearchForSMD4).ToLower(), SearchForSMD4);
-            SearchForFlver0 = SearchBoolProperty(parser, nameof(SearchForFlver0).ToLower(), SearchForFlver0);
-            SearchForFlver2 = SearchBoolProperty(parser, nameof(SearchForFlver2).ToLower(), SearchForFlver2);
-            SearchForTextures = SearchBoolProperty(parser, nameof(SearchForTextures).ToLower(), SearchForTextures);
-            SearchBND3 = SearchBoolProperty(parser, nameof(SearchBND3).ToLower(), SearchBND3);
-            SearchBND4 = SearchBoolProperty(parser, nameof(SearchBND4).ToLower(), SearchBND4);
-            SearchZero3 = SearchBoolProperty(parser, nameof(SearchZero3).ToLower(), SearchZero3);
-            BinderRecursiveSearch = SearchBoolProperty(parser, nameof(BinderRecursiveSearch).ToLower(), BinderRecursiveSearch);
-            ExportFormat = SearchStringProperty(parser, nameof(ExportFormat).ToLower(), ExportFormat);
-        }
-
-        /// <summary>
-        /// Search for a <see cref="bool"/> property.
-        /// </summary>
-        /// <param name="parser">The config parser.</param>
-        /// <param name="propertyName">The name of the property to search for.</param>
-        /// <param name="defaultResult">The default should the property not be found.</param>
-        /// <returns>The found property or the default.</returns>
-        private static bool SearchBoolProperty(ConfigParser parser, string propertyName, bool defaultResult)
-        {
-            if (parser.ValueDictionary.TryGetValue(propertyName, out string? str))
-            {
-                if (bool.TryParse(str, out bool result))
-                {
-                    return result;
-                }
-            }
-
-            return defaultResult;
-        }
-
-        /// <summary>
-        /// Search for a <see cref="string"/> property.
-        /// </summary>
-        /// <param name="parser">The config parser.</param>
-        /// <param name="propertyName">The name of the property to search for.</param>
-        /// <param name="defaultResult">The default should the property not be found.</param>
-        /// <returns>The found property or the default.</returns>
-        private static string SearchStringProperty(ConfigParser parser, string propertyName, string defaultResult)
-        {
-            if (parser.ValueDictionary.TryGetValue(propertyName, out string? str))
-            {
-                if (str != null)
-                {
-                    return str;
-                }
-            }
-
-            return defaultResult;
+            OutputToConsole = parser.SearchBoolProperty(OutputToConsole);
+            OutputToLog = parser.SearchBoolProperty(OutputToLog);
+            OutputTexturesFound = parser.SearchBoolProperty(OutputTexturesFound);
+            ReplaceExistingFiles = parser.SearchBoolProperty(ReplaceExistingFiles);
+            SearchForMDL4 = parser.SearchBoolProperty(SearchForMDL4);
+            SearchForSMD4 = parser.SearchBoolProperty(SearchForSMD4);
+            SearchForFlver0 = parser.SearchBoolProperty(SearchForFlver0);
+            SearchForFlver2 = parser.SearchBoolProperty(SearchForFlver2);
+            SearchForTextures = parser.SearchBoolProperty(SearchForTextures);
+            SearchBND3 = parser.SearchBoolProperty(SearchBND3);
+            SearchBND4 = parser.SearchBoolProperty(SearchBND4);
+            SearchZero3 = parser.SearchBoolProperty(SearchZero3);
+            BinderRecursiveSearch = parser.SearchBoolProperty(BinderRecursiveSearch);
+            DoCheckFlip = parser.SearchBoolProperty(DoCheckFlip);
+            ConvertUnitSystem = parser.SearchBoolProperty(ConvertUnitSystem);
+            PreferUnitSystemProperty = parser.SearchBoolProperty(PreferUnitSystemProperty);
+            FixRootNode = parser.SearchBoolProperty(FixRootNode);
+            MirrorX = parser.SearchBoolProperty(MirrorX);
+            MirrorY = parser.SearchBoolProperty(MirrorY);
+            MirrorZ = parser.SearchBoolProperty(MirrorZ);
+            Scale = parser.SearchFloatProperty(Scale);
+            ExportFormat = parser.SearchStringProperty(ExportFormat);
         }
     }
 }
