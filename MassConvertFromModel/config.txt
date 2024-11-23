@@ -55,6 +55,37 @@ BinderRecursiveSearch=true
 // Default: false
 DoCheckFlip=false
 
+// Whether or not to automatically convert units depending on the export format.
+// FBX uses centimeters while FromSoftware models seemingly use meters.
+// Default: true
+ConvertUnitSystem=true
+
+// Whether or not to set unit system conversions into properties or metadata instead of manual conversions where possible.
+// FBX has properties for unit scale, but some software may not use it.
+// Default: false
+PreferUnitSystemProperty=false
+
+// Fixes the root node of the scene before exporting.
+// This prevents FBX from getting rid of the intended root node.
+// Default: true
+FixRootNode=true
+
+// Whether or not to mirror the export across the X axis.
+// Default: false
+MirrorX=false
+
+// Whether or not to mirror the export across the Y axis.
+// Default: false
+MirrorY=false
+
+// Whether or not to mirror the export across the Z axis.
+// Default: true
+MirrorZ=false
+
+// The scale the export should be.
+// Default: 1.0
+Scale=1.0
+
 // The chosen Assimp export format ID, this will not allow you to export to FromSoftware models.
 // Default: fbx
 ExportFormat=fbx
