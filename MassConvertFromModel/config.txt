@@ -80,7 +80,7 @@ MirrorY=false
 
 // Whether or not to mirror the export across the Z axis.
 // Default: true
-MirrorZ=false
+MirrorZ=true
 
 // The scale the export should be.
 // Default: 1.0

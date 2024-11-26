@@ -1,6 +1,6 @@
 ﻿//CalculateTangentSpace
 //JoinIdenticalVertices
-MakeLeftHanded
+//MakeLeftHanded
 //Triangulate
 //RemoveComponent
 //GenerateNormals
@@ -21,7 +21,7 @@ MakeLeftHanded
 //OptimizeMeshes
 //OptimizeGraph
 //FlipUVs
-FlipWindingOrder
+//FlipWindingOrder
 //SplitByBoneCount
 //Debone
 //GlobalScale
