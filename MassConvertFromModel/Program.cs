@@ -9,7 +9,7 @@ namespace MassConvertFromModel
             if (args.Length == 0)
             {
                 Console.WriteLine("This program does not have a UI, please drag and drop files or folders onto it.");
-                Console.ReadLine();
+                Console.ReadKey();
                 return;
             }
 

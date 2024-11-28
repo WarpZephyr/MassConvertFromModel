@@ -75,17 +75,21 @@ namespace MassConvertFromModel
 
             if (Config.SearchZero3 && path.EndsWith(".000"))
             {
-                Zero3 zero3;
+                Zero3? zero3 = null;
                 try
                 {
                     zero3 = Zero3.Read(path);
-                    SearchZero3(zero3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
-                    return;
                 }
                 catch
                 {
                     Output($"Detected potential Zero3 but it could not be read: {Path.GetFileName(path)}\n" +
                         $"Attempting any other searches.");
+                }
+
+                if (zero3 != null)
+                {
+                    SearchZero3(zero3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
+                    return;
                 }
             }
             
@@ -99,6 +103,13 @@ namespace MassConvertFromModel
             }
             else
             {
+                var fileInfo = new FileInfo(path);
+                if (fileInfo.Length >= int.MaxValue)
+                {
+                    Console.WriteLine($"Skipping {Path.GetFileName(path)} because it is too large to read.");
+                    return;
+                }
+
                 Convert(File.ReadAllBytes(path), Path.GetFileName(path), folder);
             }
         }
@@ -163,7 +174,10 @@ namespace MassConvertFromModel
             try
             {
 #endif
-            string outPath = PathHandler.Combine(outFolder, $"{fileName}.{FromAssimpContext.GetFormatExtension(Config.ExportFormat)}");
+            outFolder = PathHandler.GetFolderOnlyPath(outFolder);
+            string outName = $"{fileName}.{FromAssimpContext.GetFormatExtension(Config.ExportFormat)}";
+            string outPath = PathHandler.Combine(outFolder, outName);
+
             if (!Config.ReplaceExistingFiles && File.Exists(outPath))
             {
                 Output($"Skipping {fileName}");
@@ -175,8 +189,12 @@ namespace MassConvertFromModel
                 || (Config.SearchForMDL4 && TryMdl4(bytes, out scene))
                 || (Config.SearchForSMD4 && TrySmd4(bytes, out scene)))
             {
-                string rootName = Path.GetFileNameWithoutExtension(fileName);
-                rootName = Path.GetFileNameWithoutExtension(rootName);
+                Directory.CreateDirectory(outFolder);
+
+                // If the root node has the same name as a bone node it confuses things
+                // Some files have a single bone with the same name as the file without extensions
+                // So for now, keep extensions
+                string rootName = fileName;
                 scene.RootNode.Name = rootName;
                 if (Config.FixRootNode && FromAssimpContext.IsFbxFormat(Config.ExportFormat))
                 {
@@ -288,13 +306,17 @@ namespace MassConvertFromModel
         {
             if (TPF.IsRead(bytes, out TPF tpf))
             {
-                fileName = PathHandler.GetWithoutExtensions(fileName);
-                outFolder = PathHandler.Combine(outFolder, fileName);
+                string outFolderName = fileName.Replace(".", "-");
+                if (!outFolderName.EndsWith("-tpf"))
+                    outFolderName += "-tpf";
+
+                outFolder = PathHandler.Combine(outFolder, outFolderName);
+                outFolder = PathHandler.GetFolderOnlyPath(outFolder);
                 Directory.CreateDirectory(outFolder);
                 foreach (var texture in tpf.Textures)
                 {
                     string outPath = PathHandler.Combine(outFolder, $"{texture.Name}.dds");
-                    if (tpf.Platform == TPF.TPFPlatform.PC)
+                    if (tpf.Platform != TPF.TPFPlatform.PC)
                     {
                         File.WriteAllBytes(outPath, texture.Bytes);
                     }
@@ -306,7 +328,7 @@ namespace MassConvertFromModel
 
                 if (Config.OutputTexturesFound)
                 {
-                    Output($"Extracted TPF {fileName}");
+                    Output($"Extracted TPF {PathHandler.GetWithoutExtensions(fileName)}");
                 }
                 return true;
             }

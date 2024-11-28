@@ -143,5 +143,23 @@
                 File.Create(path);
             }
         }
+
+        public static string GetFolderOnlyPath(string folder)
+        {
+            if (File.Exists(folder))
+            {
+                string newFolder = folder + "_folder";
+
+                int index = 0;
+                while (File.Exists(newFolder))
+                {
+                    newFolder = folder + $"{index++}";
+                }
+
+                folder = newFolder;
+            }
+
+            return folder;
+        }
     }
 }
