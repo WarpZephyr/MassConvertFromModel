@@ -207,11 +207,11 @@ namespace MassConvertFromModel
 
                 if (Context.ExportFile(scene, outPath, Config.ExportFormat, Config.ExportFlags))
                 {
-                    Console.WriteLine($"Converted: {fileName}");
+                    Output($"Converted: {fileName}");
                 }
                 else
                 {
-                    Console.WriteLine($"Failed: {fileName}");
+                    Output($"Failed: {fileName}");
                 }
             }
             else if (Config.SearchForTextures)
