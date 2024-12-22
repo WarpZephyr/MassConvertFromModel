@@ -1,4 +1,9 @@
-﻿using Assimp;
+﻿#if DEBUG
+//#define DEBUG_DISABLE_TRY_CATCH
+//#define DEBUG_THROW_ON_FAILED_CONVERT
+#endif
+
+using Assimp;
 using FromAssimp;
 using MassConvertFromModel.Handlers;
 using MassConvertFromModel.Loggers;
@@ -38,7 +43,7 @@ namespace MassConvertFromModel
         public string ExportFormat { get; set; }
 
         /// <summary>
-        /// The root folder to be testing in.
+        /// The root folder to convert in.
         /// </summary>
         public string RootFolder { get; set; }
 
@@ -113,7 +118,7 @@ namespace MassConvertFromModel
         public bool FixRootNode { get; set; }
 
         /// <summary>
-        /// Whether or not to use the root folder properties.
+        /// Whether or not to use root folder settings.
         /// </summary>
         public bool UseRootFolder { get; set; }
 
@@ -284,27 +289,31 @@ namespace MassConvertFromModel
             bool FindSplitBinder(string name, [NotNullWhen(true)] out Stream? result)
                     => TryFindStreamInBinder(binder, name, out result);
 
+            string outFolderTemp;
             foreach (var file in binder.Files)
             {
+                outFolderTemp = outFolder;
+                string fileName = file.Name ?? file.ID.ToString();
+
                 using Stream stream = GetDecompressedStream(file.Bytes);
                 if (RecursiveSearch && TryReadBinder(stream, out IBinder? innerBinder))
                 {
-                    outFolder = PathHandler.Combine(outFolder, file.Name.Replace('.', '-'));
-                    SearchBinder(innerBinder, outFolder, outExtension, exportFormat);
+                    outFolderTemp = PathHandler.Combine(outFolderTemp, fileName.Replace('.', '-'));
+                    SearchBinder(innerBinder, outFolderTemp, outExtension, exportFormat);
                 }
-                else if (RecursiveSearch && TryReadSplitBinder(stream, file.Name, FindSplitBinder, out innerBinder))
+                else if (RecursiveSearch && TryReadSplitBinder(stream, fileName, FindSplitBinder, out innerBinder))
                 {
-                    outFolder = PathHandler.Combine(outFolder, file.Name.Replace('.', '-'));
-                    SearchBinder(innerBinder, outFolder, outExtension, exportFormat);
+                    outFolderTemp = PathHandler.Combine(outFolderTemp, fileName.Replace('.', '-'));
+                    SearchBinder(innerBinder, outFolderTemp, outExtension, exportFormat);
                 }
                 else
                 {
-                    string? folder = Path.GetDirectoryName(file.Name);
+                    string? folder = Path.GetDirectoryName(fileName);
                     if (!string.IsNullOrWhiteSpace(folder))
-                        outFolder = PathHandler.Combine(outFolder, folder);
+                        outFolderTemp = PathHandler.Combine(outFolderTemp, folder);
 
-                    string outName = Path.GetFileName(file.Name);
-                    Convert(stream, outFolder, outName, outExtension, exportFormat);
+                    string outName = Path.GetFileName(fileName);
+                    Convert(stream, outFolderTemp, outName, outExtension, exportFormat);
                 }
             }
         }
@@ -362,8 +371,12 @@ namespace MassConvertFromModel
 
                 string outFileName = $"{outName}.{outExtension}";
                 string outPath = PathHandler.Combine(outFolder, outFileName);
+
                 if (!ReplaceExistingFiles && File.Exists(outPath))
                     return false;
+
+                if (outPath.Length > PathHandler.FileMaxLenWin)
+                    LogWarning($"Export file name length may be too long: {outPath.Length}");
 
                 Scene scene;
                 if (SearchForFlver2 && FLVER2.IsRead(stream, out FLVER2 flver2))
@@ -380,6 +393,10 @@ namespace MassConvertFromModel
                 string? createFolder = Path.GetDirectoryName(outPath);
                 if (string.IsNullOrWhiteSpace(createFolder))
                     createFolder = outFolder;
+
+                if (createFolder.Length > PathHandler.FolderMaxLenWin)
+                    LogWarning($"Export folder name length may be too long: {createFolder.Length}");
+
                 Directory.CreateDirectory(createFolder);
                 ExportModel(scene, outName, outPath, exportFormat);
                 CopyModel(stream, outFolder, outName);
@@ -445,6 +462,10 @@ namespace MassConvertFromModel
             else
             {
                 LogModel($"Failed: {outName}");
+
+#if DEBUG && DEBUG_THROW_ON_FAILED_CONVERT
+                throw new Exception($"Failed conversion: {outName}");
+#endif
             }
         }
 

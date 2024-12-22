@@ -142,7 +142,7 @@ namespace MassConvertFromModel.Loggers
             => Queue.Add(value + '\n');
 
         /// <summary>
-        /// Flush all queued writes to the logger.
+        /// Flush all queued writes to the logger and stops the timer.
         /// </summary>
         public void Flush()
         {

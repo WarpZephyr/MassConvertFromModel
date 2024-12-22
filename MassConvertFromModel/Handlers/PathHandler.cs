@@ -5,6 +5,9 @@
     /// </summary>
     internal static class PathHandler
     {
+        internal const int FolderMaxLenWin = 248;
+        internal const int FileMaxLenWin = 255;
+
         internal static string GetDirectoryName(string path)
         {
             string? directory = Path.GetDirectoryName(path) ?? path;

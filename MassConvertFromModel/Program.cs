@@ -1,10 +1,13 @@
-﻿//#define DEBUG_DISABLE_TRY_CATCH
+﻿#if DEBUG
+//#define DEBUG_DISABLE_TRY_CATCH
+//#define TEST_MODE
+#endif
+
 using MassConvertFromModel.Handlers;
 using FromAssimp;
 using System.Diagnostics;
 using MassConvertFromModel.Loggers;
 using MassConvertFromModel.Configs;
-
 
 namespace MassConvertFromModel
 {
@@ -144,7 +147,7 @@ namespace MassConvertFromModel
         }
 
         /// <summary>
-        /// Runs the search for things to convert.
+        /// Runs a search for things to convert.
         /// </summary>
         /// <param name="converter">The converter.</param>
         /// <param name="paths">The paths to search.</param>
@@ -164,12 +167,33 @@ namespace MassConvertFromModel
         }
 
         /// <summary>
+        /// Runs a test search for things to convert.
+        /// </summary>
+        /// <param name="converter">The converter.</param>
+        /// <param name="paths">The paths to search.</param>
+        private static void RunTestSearch(SearchingConverter converter, string[] paths)
+        {
+            for (int i = 2; i < paths.Length; i++)
+            {
+                string path = paths[i];
+                if (Directory.Exists(path))
+                {
+                    converter.SearchFolder(path);
+                }
+                else if (File.Exists(path))
+                {
+                    converter.SearchFile(path);
+                }
+            }
+        }
+
+        /// <summary>
         /// The main processing function.
         /// </summary>
         /// <param name="args">The arguments to process.</param>
         static void Run(string[] args)
         {
-            if (args.Length == 0)
+            if (args.Length < 1)
             {
                 Console.WriteLine("This program does not have a UI, please drag and drop files or folders onto it.");
                 Console.ReadLine();
@@ -186,9 +210,30 @@ namespace MassConvertFromModel
             var converter = new SearchingConverter(context, logger, true);
             SetConfigOptions(converter, context, config);
 
+#if TEST_MODE
+            Console.WriteLine("Setting up test mode...");
+            if (args.Length > 1)
+            {
+                converter.CopyImport = false;
+                converter.UseRootFolder = true;
+                converter.RootFolder = args[0];
+                converter.RootFolderOverride = args[1];
+                Console.WriteLine($"Root folder: {converter.RootFolder}");
+                Console.WriteLine($"Root folder override: {converter.RootFolderOverride}");
+
+                Console.WriteLine("Testing...");
+                logger.StartTimer();
+                RunTestSearch(converter, args);
+            }
+            else
+            {
+                Console.WriteLine("Not enough arguments to setup test mode.");
+            }
+#else
             Console.WriteLine("Searching...");
             logger.StartTimer();
             RunSearch(converter, args);
+#endif
             logger.Flush();
 
             if (textWriter != null)
