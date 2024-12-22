@@ -1,5 +1,8 @@
 ﻿namespace MassConvertFromModel.Handlers
 {
+    /// <summary>
+    /// Handles processing and cleaning string paths.
+    /// </summary>
     internal static class PathHandler
     {
         internal static string GetDirectoryName(string path)

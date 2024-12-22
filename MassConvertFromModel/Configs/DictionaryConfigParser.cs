@@ -1,11 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace MassConvertFromModel
+namespace MassConvertFromModel.Configs
 {
     /// <summary>
     /// A parser for simple configuration files.
     /// </summary>
-    public class DictionaryConfigParser
+    internal class DictionaryConfigParser
     {
         /// <summary>
         /// A dictionary containing read property to value pairs.

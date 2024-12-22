@@ -1,11 +1,11 @@
 ﻿using Assimp;
 
-namespace MassConvertFromModel
+namespace MassConvertFromModel.Configs
 {
     /// <summary>
-    /// A configuration for a <see cref="SearchingConverter"/>.
+    /// A configuration for converting.
     /// </summary>
-    public class SearchingConverterConfig
+    public class ConverterConfig
     {
         /// <summary>
         /// Whether or not logged events are outputted to the console.
@@ -78,6 +78,11 @@ namespace MassConvertFromModel
         public bool DoCheckFlip { get; set; } = false;
 
         /// <summary>
+        /// Whether or not to ignore bone scale when converting.
+        /// </summary>
+        public bool ScalelessBones { get; set; } = false;
+
+        /// <summary>
         /// Whether or not to automatically convert units depending on the export format.
         /// </summary>
         public bool ConvertUnitSystem { get; set; } = true;
@@ -88,7 +93,7 @@ namespace MassConvertFromModel
         public bool PreferUnitSystemProperty { get; set; } = false;
 
         /// <summary>
-        /// Fixes the root node of the scene before exporting.
+        /// Fixes the root node of the scene before exporting if necessary.
         /// </summary>
         public bool FixRootNode { get; set; } = true;
 
@@ -145,6 +150,7 @@ namespace MassConvertFromModel
             SearchZero3 = parser.SearchBoolProperty(SearchZero3);
             BinderRecursiveSearch = parser.SearchBoolProperty(BinderRecursiveSearch);
             DoCheckFlip = parser.SearchBoolProperty(DoCheckFlip);
+            ScalelessBones = parser.SearchBoolProperty(ScalelessBones);
             ConvertUnitSystem = parser.SearchBoolProperty(ConvertUnitSystem);
             PreferUnitSystemProperty = parser.SearchBoolProperty(PreferUnitSystemProperty);
             FixRootNode = parser.SearchBoolProperty(FixRootNode);

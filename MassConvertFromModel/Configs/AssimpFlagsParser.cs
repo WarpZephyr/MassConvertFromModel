@@ -1,9 +1,17 @@
 ﻿using Assimp;
 
-namespace MassConvertFromModel
+namespace MassConvertFromModel.Configs
 {
-    public static class AssimpFlagsParser
+    /// <summary>
+    /// Parses assimp flags from the assimp flags config.
+    /// </summary>
+    internal static class AssimpFlagsParser
     {
+        /// <summary>
+        /// Parses the file on the specified path into assimp flags.
+        /// </summary>
+        /// <param name="path">The path to the file to parse.</param>
+        /// <returns>Assimp flags parsed from the specified file.</returns>
         public static PostProcessSteps Parse(string path)
         {
             PostProcessSteps flags = PostProcessSteps.None;
@@ -20,6 +28,11 @@ namespace MassConvertFromModel
             return flags;
         }
 
+        /// <summary>
+        /// Converts the specified line into an assimp flag.
+        /// </summary>
+        /// <param name="parsedLine">The line to parse.</param>
+        /// <returns>An assimp flag.</returns>
         private static PostProcessSteps ToFlag(string parsedLine)
         {
             switch (parsedLine)

@@ -55,6 +55,12 @@ BinderRecursiveSearch=true
 // Default: false
 DoCheckFlip=false
 
+// Whether or not to ignore bone scale when converting.
+// Armored Core For Answer models seem to ignore it.
+// The rods on White Glint's head part are set to a scale other than 1, but are not scaled in game.
+// Default: false
+ScalelessBones=false
+
 // Whether or not to automatically convert units depending on the export format.
 // FBX uses centimeters while FromSoftware models seemingly use meters.
 // Default: true

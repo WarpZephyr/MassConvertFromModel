@@ -1,393 +1,744 @@
 ﻿using Assimp;
 using FromAssimp;
 using MassConvertFromModel.Handlers;
+using MassConvertFromModel.Loggers;
 using SoulsFormats;
 using System.Diagnostics.CodeAnalysis;
 
 namespace MassConvertFromModel
 {
     /// <summary>
-    /// Searches through files and archives recursively to convert them.
+    /// Searches through files and archives recursively to convert found models and textures.
     /// </summary>
-    public class SearchingConverter : IDisposable
+    public class SearchingConverter
     {
         /// <summary>
-        /// A log containing logged events according to the config.
+        /// The format cache for supported assimp formats.
         /// </summary>
-        public List<string> Log = [];
-
-        /// <summary>
-        /// A configuration for the converter.
-        /// </summary>
-        public SearchingConverterConfig Config = new SearchingConverterConfig();
+        private ContextFormatCache FormatCache { get; set; }
 
         /// <summary>
         /// The assimp context converter.
         /// </summary>
-        public FromAssimpContext Context = new FromAssimpContext();
+        public FromAssimpContext Context { get; set; }
 
         /// <summary>
-        /// The chosen delegate for writing a line to output.
+        /// The logger.
         /// </summary>
-        public Action<string> WriteLine = Console.WriteLine;
+        public ILogger Logger { get; set; }
 
         /// <summary>
-        /// Whether or not the converter has been disposed.
+        /// The export flags for the assimp context converter.
         /// </summary>
-        public bool IsDisposed { get; private set; }
+        public PostProcessSteps ExportFlags { get; set; }
 
         /// <summary>
-        /// Sets the assimp context options from the config.
+        /// The export format.
         /// </summary>
-        public void SetContextOptions()
+        public string ExportFormat { get; set; }
+
+        /// <summary>
+        /// The root folder to be testing in.
+        /// </summary>
+        public string RootFolder { get; set; }
+
+        /// <summary>
+        /// The folder to replace the root folder with for pathing output.
+        /// </summary>
+        public string RootFolderOverride { get; set; }
+
+        /// <summary>
+        /// Whether or not to search for <see cref="SMD4"/> models.
+        /// </summary>
+        public bool SearchForSmd4 { get; set; }
+
+        /// <summary>
+        /// Whether or not to search for <see cref="MDL4"/> models.
+        /// </summary>
+        public bool SearchForMdl4 { get; set; }
+
+        /// <summary>
+        /// Whether or not to search for <see cref="FLVER0"/> models.
+        /// </summary>
+        public bool SearchForFlver0 { get; set; }
+
+        /// <summary>
+        /// Whether or not to search for <see cref="FLVER2"/> models.
+        /// </summary>
+        public bool SearchForFlver2 { get; set; }
+
+        /// <summary>
+        /// Whether or not to search for <see cref="TPF"/> textures.
+        /// </summary>
+        public bool SearchForTpf { get; set; }
+
+        /// <summary>
+        /// Whether or not to search <see cref="BND3"/> archives.
+        /// </summary>
+        public bool SearchForBND3 { get; set; }
+
+        /// <summary>
+        /// Whether or not to search <see cref="BND4"/> archives.
+        /// </summary>
+        public bool SearchForBND4 { get; set; }
+
+        /// <summary>
+        /// Whether or not to search <see cref="BXF3"/> archives.
+        /// </summary>
+        public bool SearchForBXF3 { get; set; }
+
+        /// <summary>
+        /// Whether or not to search <see cref="BXF4"/> archives.
+        /// </summary>
+        public bool SearchForBXF4 { get; set; }
+
+        /// <summary>
+        /// Whether or not to search <see cref="Zero3"/> archives.
+        /// </summary>
+        public bool SearchForZero3 { get; set; }
+
+        /// <summary>
+        /// Whether or not to recursively search archives.
+        /// </summary>
+        public bool RecursiveSearch { get; set; }
+
+        /// <summary>
+        /// Whether or not to replace existing files.
+        /// </summary>
+        public bool ReplaceExistingFiles { get; set; }
+
+        /// <summary>
+        /// Fixes the root node of the scene before exporting if necessary.
+        /// </summary>
+        public bool FixRootNode { get; set; }
+
+        /// <summary>
+        /// Whether or not to use the root folder properties.
+        /// </summary>
+        public bool UseRootFolder { get; set; }
+
+        /// <summary>
+        /// Whether or not to copy the file being imported to the export location.
+        /// </summary>
+        public bool CopyImport { get; set; }
+
+        /// <summary>
+        /// Whether or not to log when models are exported.
+        /// </summary>
+        public bool LogModelsExported { get; set; }
+
+        /// <summary>
+        /// Whether or not to log when textures are exported.
+        /// </summary>
+        public bool LogTexturesExported { get; set; }
+
+        /// <summary>
+        /// Whether or not to log when models are copied.
+        /// </summary>
+        public bool LogModelsCopied { get; set; }
+
+        /// <summary>
+        /// Whether or not to log when textures are copied.
+        /// </summary>
+        public bool LogTexturesCopied { get; set; }
+
+        /// <summary>
+        /// Whether or not to log warnings.
+        /// </summary>
+        public bool LogWarnings { get; set; }
+
+        /// <summary>
+        /// Whether or not to log errors.
+        /// </summary>
+        public bool LogErrors { get; set; }
+
+        /// <summary>
+        /// Create a new <see cref="SearchingConverter"/>.
+        /// </summary>
+        /// <param name="context">The assimp context converter.</param>
+        /// <param name="logger">The logger.</param>
+        /// <param name="enableLogging">Whether or not to log things.</param>
+        public SearchingConverter(FromAssimpContext context, ILogger logger, bool enableLogging = true)
         {
-            // This doesn't feel ideal.
-            // Might need to refactor later.
-            Context.DoCheckFlip = Config.DoCheckFlip;
-            Context.ConvertUnitSystem = Config.ConvertUnitSystem;
-            Context.PreferUnitSystemProperty = Config.PreferUnitSystemProperty;
-            Context.MirrorX = Config.MirrorX;
-            Context.MirrorY = Config.MirrorY;
-            Context.MirrorZ = Config.MirrorZ;
-            Context.ImportScale = Config.Scale;
+            FormatCache = new ContextFormatCache(context.Context);
+            Context = context;
+            Logger = logger;
+            ExportFlags = PostProcessSteps.None;
+            ExportFormat = "fbx";
+            RootFolder = string.Empty;
+            RootFolderOverride = string.Empty;
+            SearchForSmd4 = true;
+            SearchForMdl4 = true;
+            SearchForFlver0 = true;
+            SearchForFlver2 = true;
+            SearchForTpf = true;
+            SearchForBND3 = true;
+            SearchForBND4 = true;
+            SearchForBXF3 = true;
+            SearchForBXF4 = true;
+            SearchForZero3 = true;
+            RecursiveSearch = true;
+            ReplaceExistingFiles = true;
+            UseRootFolder = false;
+            CopyImport = false;
+            LogModelsExported = enableLogging;
+            LogTexturesExported = enableLogging;
+            LogModelsCopied = enableLogging;
+            LogTexturesCopied = enableLogging;
+            LogWarnings = enableLogging;
+            LogErrors = enableLogging;
+        }
+
+        #region Search
+
+        /// <summary>
+        /// Search a folder.
+        /// </summary>
+        /// <param name="folder">The folder to search.</param>
+        public void SearchFolder(string folder)
+        {
+            string exportFormat = GetExportFormat();
+            string outExtension = FromAssimpContext.GetFormatExtension(exportFormat);
+            var files = Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories);
+            foreach (var file in files)
+            {
+                string fileFolder = PathHandler.GetDirectoryName(file);
+                string outFolder = GetOutputFolder(fileFolder);
+                string outName = Path.GetFileName(file);
+                SearchFileInternal(file, outFolder, outName, outExtension, exportFormat);
+            }
         }
 
         /// <summary>
-        /// Search a folder recursively.
+        /// Search files.
         /// </summary>
-        /// <param name="path">The path to the folder.</param>
-        public void SearchFolder(string path)
+        /// <param name="files">The files to search.</param>
+        public void SearchFiles(IEnumerable<string> files)
         {
-            var files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
-            foreach (string file in files)
+            string exportFormat = GetExportFormat();
+            string outExtension = FromAssimpContext.GetFormatExtension(exportFormat);
+            foreach (var file in files)
             {
-                SearchFile(file);
+                string folder = PathHandler.GetDirectoryName(file);
+                string outFolder = GetOutputFolder(folder);
+                string outName = Path.GetFileName(file);
+                SearchFileInternal(file, outFolder, outName, outExtension, exportFormat);
             }
         }
 
         /// <summary>
         /// Search a file.
         /// </summary>
-        /// <param name="path">The path to the file.</param>
-        public void SearchFile(string path)
+        /// <param name="file">The file to search.</param>
+        public void SearchFile(string file)
         {
-            string folder = PathHandler.GetDirectoryName(path);
-
-            if (Config.SearchZero3 && path.EndsWith(".000"))
-            {
-                Zero3? zero3 = null;
-                try
-                {
-                    zero3 = Zero3.Read(path);
-                }
-                catch
-                {
-                    Output($"Detected potential Zero3 but it could not be read: {Path.GetFileName(path)}\n" +
-                        $"Attempting any other searches.");
-                }
-
-                if (zero3 != null)
-                {
-                    SearchZero3(zero3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
-                    return;
-                }
-            }
-            
-            if (Config.SearchBND3 && BND3.IsRead(path, out BND3 bnd3))
-            {
-                SearchBinder(bnd3, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
-            }
-            else if (Config.SearchBND4 && BND4.IsRead(path, out BND4 bnd4))
-            {
-                SearchBinder(bnd4, PathHandler.Combine(folder, PathHandler.GetWithoutExtensions(path)));
-            }
-            else
-            {
-                var fileInfo = new FileInfo(path);
-                if (fileInfo.Length >= int.MaxValue)
-                {
-                    Console.WriteLine($"Skipping {Path.GetFileName(path)} because it is too large to read.");
-                    return;
-                }
-
-                Convert(File.ReadAllBytes(path), Path.GetFileName(path), folder);
-            }
+            string exportFormat = GetExportFormat();
+            string folder = PathHandler.GetDirectoryName(file);
+            string outFolder = GetOutputFolder(folder);
+            string outName = Path.GetFileName(file);
+            string outExtension = FromAssimpContext.GetFormatExtension(exportFormat);
+            SearchFileInternal(file, outFolder, outName, outExtension, exportFormat);
         }
 
-        /// <summary>
-        /// Search a binder recursively.
-        /// </summary>
-        /// <param name="binder">The binder.</param>
-        /// <param name="outFolder">The extract path for potential binder extraction.</param>
-        void SearchBinder(IBinder binder, string outFolder)
-        {
-            foreach (var file in binder.Files)
-            {
-                if (Config.BinderRecursiveSearch && Config.SearchBND3 && BND3.IsRead(file.Bytes, out BND3 bnd3))
-                {
-                    SearchBinder(bnd3, PathHandler.Combine(outFolder, PathHandler.GetWithoutExtensions(file.Name)));
-                }
-                else if (Config.BinderRecursiveSearch && Config.SearchBND4 && BND4.IsRead(file.Bytes, out BND4 bnd4))
-                {
-                    SearchBinder(bnd4, PathHandler.Combine(outFolder, PathHandler.GetWithoutExtensions(file.Name)));
-                }
-                else
-                {
-                    Convert(file.Bytes, Path.GetFileName(file.Name), PathHandler.Combine(outFolder, PathHandler.GetDirectoryName(file.Name)));
-                }
-            }
-        }
+        #endregion
 
-        /// <summary>
-        /// Search a multi container archive from Armored Core 4 recursively.
-        /// </summary>
-        /// <param name="zero3">The archive.</param>
-        /// <param name="outFolder">The extract path for potential extraction.</param>
-        void SearchZero3(Zero3 zero3, string outFolder)
-        {
-            foreach (var file in zero3.Files)
-            {
-                if (Config.SearchBND3 && BND3.IsRead(file.Bytes, out BND3 bnd3))
-                {
-                    SearchBinder(bnd3, PathHandler.Combine(outFolder, PathHandler.GetWithoutExtensions(file.Name)));
-                }
-                else if (Config.SearchBND4 && BND4.IsRead(file.Bytes, out BND4 bnd4))
-                {
-                    SearchBinder(bnd4, PathHandler.Combine(outFolder, PathHandler.GetWithoutExtensions(file.Name)));
-                }
-                else
-                {
-                    Convert(file.Bytes, Path.GetFileName(file.Name), PathHandler.Combine(outFolder, PathHandler.GetDirectoryName(file.Name)));
-                }
-            }
-        }
+        #region Search Internal
 
-        /// <summary>
-        /// Convert a file if a supported match is found.
-        /// </summary>
-        /// <param name="bytes">The bytes of the file.</param>
-        /// <param name="fileName">The name of the file.</param>
-        /// <param name="outFolder">The folder to output the converted file to.</param>
-        void Convert(byte[] bytes, string fileName, string outFolder)
+        private void SearchFileInternal(string file, string outFolder, string outName, string outExtension, string exportFormat)
         {
-#if !DEBUG
+#if !DEBUG_DISABLE_TRY_CATCH
             try
             {
 #endif
-            outFolder = PathHandler.GetFolderOnlyPath(outFolder);
-            string outName = $"{fileName}.{FromAssimpContext.GetFormatExtension(Config.ExportFormat)}";
-            string outPath = PathHandler.Combine(outFolder, outName);
-
-            if (!Config.ReplaceExistingFiles && File.Exists(outPath))
-            {
-                Output($"Skipping {fileName}");
-                return;
-            }
-
-            if ((Config.SearchForFlver2 && TryFlver2(bytes, out Scene? scene))
-                || (Config.SearchForFlver0 && TryFlver0(bytes, out scene))
-                || (Config.SearchForMDL4 && TryMdl4(bytes, out scene))
-                || (Config.SearchForSMD4 && TrySmd4(bytes, out scene)))
-            {
-                Directory.CreateDirectory(outFolder);
-
-                // If the root node has the same name as a bone node it confuses things
-                // Some files have a single bone with the same name as the file without extensions
-                // So for now, keep extensions
-                string rootName = fileName;
-                scene.RootNode.Name = rootName;
-                if (Config.FixRootNode && FromAssimpContext.IsFbxFormat(Config.ExportFormat))
+                using Stream stream = GetDecompressedStream(File.OpenRead(file));
+                if (TryReadBinder(stream, out IBinder? binder))
                 {
-                    // Can't set old root node parent unfortunately...
-                    var oldRootNode = scene.RootNode;
-                    var newRootNode = new Node("Root");
-                    newRootNode.Children.Add(oldRootNode);
-                    scene.RootNode = newRootNode;
+                    outFolder = PathHandler.Combine(outFolder, outName.Replace('.', '-'));
+                    SearchBinder(binder, outFolder, outExtension, exportFormat);
                 }
-
-                if (Context.ExportFile(scene, outPath, Config.ExportFormat, Config.ExportFlags))
+                else if (TryReadSplitBinder(stream, file, TryFindStreamFromPath, out binder))
                 {
-                    Output($"Converted: {fileName}");
+                    outFolder = PathHandler.Combine(outFolder, outName.Replace('.', '-'));
+                    SearchBinder(binder, outFolder, outExtension, exportFormat);
+                }
+                else if (SearchForZero3 && file.EndsWith(".000") && TryReadZero3(file, out Zero3? zero3))
+                {
+                    outFolder = PathHandler.Combine(outFolder, outName.Replace('.', '-'));
+                    SearchZero3(zero3, outFolder, outExtension, exportFormat);
                 }
                 else
                 {
-                    Output($"Failed: {fileName}");
+                    Convert(stream, outFolder, outName, outExtension, exportFormat);
                 }
-            }
-            else if (Config.SearchForTextures)
-            {
-                TryTpf(bytes, fileName, outFolder);
-            }
-#if !DEBUG
+#if !DEBUG_DISABLE_TRY_CATCH
             }
             catch (Exception ex)
             {
-                Output($"Error Converting {fileName}: {ex.Message}");
+                LogError($"Error while searching {outName}:\n{ex.Message}\nStacktrace:\n{ex.StackTrace}");
             }
 #endif
         }
 
-        /// <summary>
-        /// Try to convert data as a <see cref="FLVER0"/>.
-        /// </summary>
-        /// <param name="bytes">The raw bytes of the data.</param>
-        /// <returns>Whether or not the data was read as a <see cref="FLVER0"/> and converted.</returns>
-        bool TryFlver0(byte[] bytes, [NotNullWhen(true)] out Scene? scene)
+        private void SearchBinder(IBinder binder, string outFolder, string outExtension, string exportFormat)
         {
-            if (FLVER0.IsRead(bytes, out FLVER0 model))
-            {
-                scene = Context.ImportFileFromFlver0(model);
-                return true;
-            }
+            bool FindSplitBinder(string name, [NotNullWhen(true)] out Stream? result)
+                    => TryFindStreamInBinder(binder, name, out result);
 
-            scene = null;
-            return false;
+            foreach (var file in binder.Files)
+            {
+                using Stream stream = GetDecompressedStream(file.Bytes);
+                if (RecursiveSearch && TryReadBinder(stream, out IBinder? innerBinder))
+                {
+                    outFolder = PathHandler.Combine(outFolder, file.Name.Replace('.', '-'));
+                    SearchBinder(innerBinder, outFolder, outExtension, exportFormat);
+                }
+                else if (RecursiveSearch && TryReadSplitBinder(stream, file.Name, FindSplitBinder, out innerBinder))
+                {
+                    outFolder = PathHandler.Combine(outFolder, file.Name.Replace('.', '-'));
+                    SearchBinder(innerBinder, outFolder, outExtension, exportFormat);
+                }
+                else
+                {
+                    string? folder = Path.GetDirectoryName(file.Name);
+                    if (!string.IsNullOrWhiteSpace(folder))
+                        outFolder = PathHandler.Combine(outFolder, folder);
+
+                    string outName = Path.GetFileName(file.Name);
+                    Convert(stream, outFolder, outName, outExtension, exportFormat);
+                }
+            }
         }
 
-        /// <summary>
-        /// Try to convert data as a <see cref="FLVER2"/>.
-        /// </summary>
-        /// <param name="bytes">The raw bytes of the data.</param>
-        /// <returns>Whether or not the data was read as a <see cref="FLVER2"/> and converted.</returns>
-        bool TryFlver2(byte[] bytes, [NotNullWhen(true)] out Scene? scene)
+        private void SearchZero3(Zero3 zero3, string outFolder, string outExtension, string exportFormat)
         {
-            if (FLVER2.IsRead(bytes, out FLVER2 model))
-            {
-                scene = Context.ImportFileFromFlver2(model);
-                return true;
-            }
+            bool FindSplitBinder(string name, [NotNullWhen(true)] out Stream? result)
+                    => TryFindStreamInZero3(zero3, name, out result);
 
-            scene = null;
-            return false;
+            foreach (var file in zero3.Files)
+            {
+                using Stream stream = GetDecompressedStream(file.Bytes);
+                if (RecursiveSearch && TryReadBinder(stream, out IBinder? innerBinder))
+                {
+                    outFolder = PathHandler.Combine(outFolder, file.Name.Replace('.', '-'));
+                    SearchBinder(innerBinder, outFolder, outExtension, exportFormat);
+                }
+                else if (RecursiveSearch && TryReadSplitBinder(stream, file.Name, FindSplitBinder, out innerBinder))
+                {
+                    outFolder = PathHandler.Combine(outFolder, file.Name.Replace('.', '-'));
+                    SearchBinder(innerBinder, outFolder, outExtension, exportFormat);
+                }
+                else
+                {
+                    string? folder = Path.GetDirectoryName(file.Name);
+                    if (!string.IsNullOrWhiteSpace(folder))
+                        outFolder = PathHandler.Combine(outFolder, folder);
+
+                    string outName = Path.GetFileName(file.Name);
+                    Convert(stream, outFolder, outName, outExtension, exportFormat);
+                }
+            }
         }
 
-        /// <summary>
-        /// Try to convert data as a <see cref="MDL4"/>.
-        /// </summary>
-        /// <param name="bytes">The raw bytes of the data.</param>
-        /// <returns>Whether or not the data was read as a <see cref="MDL4"/> and converted.</returns>
-        bool TryMdl4(byte[] bytes, [NotNullWhen(true)] out Scene? scene)
-        {
-            if (MDL4.IsRead(bytes, out MDL4 model))
-            {
-                scene = Context.ImportFileFromMdl4(model);
-                return true;
-            }
+        #endregion
 
-            scene = null;
-            return false;
+        #region Convert
+
+        private bool Convert(Stream stream, string outFolder, string outName, string outExtension, string exportFormat)
+        {
+#if !DEBUG_DISABLE_TRY_CATCH
+            try
+            {
+#endif
+                if (SearchForTpf && TPF.IsRead(stream, out TPF tpf))
+                {
+                    if (!outName.Contains("tpf"))
+                        outName += ".tpf";
+
+                    outFolder = PathHandler.Combine(outFolder, outName.Replace('.', '-'));
+                    ExportTextures(tpf, outFolder);
+                    CopyTexture(stream, outFolder, outName);
+                    return true;
+                }
+
+                string outFileName = $"{outName}.{outExtension}";
+                string outPath = PathHandler.Combine(outFolder, outFileName);
+                if (!ReplaceExistingFiles && File.Exists(outPath))
+                    return false;
+
+                Scene scene;
+                if (SearchForFlver2 && FLVER2.IsRead(stream, out FLVER2 flver2))
+                    scene = Context.ImportFileFromFlver2(flver2);
+                else if (SearchForFlver0 && FLVER0.IsRead(stream, out FLVER0 flver0))
+                    scene = Context.ImportFileFromFlver0(flver0);
+                else if (SearchForMdl4 && MDL4.IsRead(stream, out MDL4 mdl4))
+                    scene = Context.ImportFileFromMdl4(mdl4);
+                else if (SearchForSmd4 && SMD4.IsRead(stream, out SMD4 smd4))
+                    scene = Context.ImportFileFromSmd4(smd4);
+                else
+                    return false;
+
+                string? createFolder = Path.GetDirectoryName(outPath);
+                if (string.IsNullOrWhiteSpace(createFolder))
+                    createFolder = outFolder;
+                Directory.CreateDirectory(createFolder);
+                ExportModel(scene, outName, outPath, exportFormat);
+                CopyModel(stream, outFolder, outName);
+                return true;
+#if !DEBUG_DISABLE_TRY_CATCH
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error while converting {outName}:\n{ex.Message}\nStacktrace:\n{ex.StackTrace}");
+                return false;
+            }
+#endif
         }
 
-        /// <summary>
-        /// Try to convert data as a <see cref="SMD4"/>.
-        /// </summary>
-        /// <param name="bytes">The raw bytes of the data.</param>
-        /// <returns>Whether or not the data was read as a <see cref="SMD4"/> and converted.</returns>
-        bool TrySmd4(byte[] bytes, [NotNullWhen(true)] out Scene? scene)
+        private void CopyModel(Stream stream, string outFolder, string outName)
         {
-            if (SMD4.IsRead(bytes, out SMD4 model))
+            if (CopyImport)
             {
-                scene = Context.ImportFileFromSmd4(model);
-                return true;
-            }
-
-            scene = null;
-            return false;
-        }
-
-        /// <summary>
-        /// Try to extract data as a <see cref="TPF"/>.
-        /// </summary>
-        /// <param name="bytes">The raw bytes of the data.</param>
-        /// <param name="fileName">The name of the file containing the data.</param>
-        /// <param name="outFolder">The folder to output extracted <see cref="TPF"/> data to.</param>
-        /// <returns>Whether or not the data was read as a <see cref="TPF"/> and extracted.</returns>
-        bool TryTpf(byte[] bytes, string fileName, string outFolder)
-        {
-            if (TPF.IsRead(bytes, out TPF tpf))
-            {
-                string outFolderName = fileName.Replace(".", "-");
-                if (!outFolderName.EndsWith("-tpf"))
-                    outFolderName += "-tpf";
-
-                outFolder = PathHandler.Combine(outFolder, outFolderName);
-                outFolder = PathHandler.GetFolderOnlyPath(outFolder);
                 Directory.CreateDirectory(outFolder);
-                foreach (var texture in tpf.Textures)
+                string importOutPath = PathHandler.Combine(outFolder, outName);
+                if (ReplaceExistingFiles || !File.Exists(importOutPath))
                 {
-                    string outPath = PathHandler.Combine(outFolder, $"{texture.Name}.dds");
-                    if (tpf.Platform != TPF.TPFPlatform.PC)
-                    {
-                        File.WriteAllBytes(outPath, texture.Bytes);
-                    }
-                    else
-                    {
-                        File.WriteAllBytes(outPath, texture.Headerize());
-                    }
+                    CopyImportToExportLocation(stream, importOutPath);
+                    LogModelCopied($"Copied: {outName}");
+                }
+            }
+        }
+
+        private void CopyTexture(Stream stream, string outFolder, string outName)
+        {
+            if (CopyImport)
+            {
+                Directory.CreateDirectory(outFolder);
+                string importOutPath = PathHandler.Combine(outFolder, outName);
+                if (ReplaceExistingFiles || !File.Exists(importOutPath))
+                {
+                    CopyImportToExportLocation(stream, importOutPath);
+                    LogTextureCopied($"Copied: {outName}");
+                }
+            }
+        }
+
+        private void ExportModel(Scene scene, string outName, string outPath, string exportFormat)
+        {
+            // If the root node has the same name as a bone node it confuses things
+            // Some files have a single bone with the same name as the file without extensions
+            // So for now, keep extensions
+            string rootName = outName;
+            scene.RootNode.Name = rootName;
+            if (FixRootNode && FromAssimpContext.IsFbxFormat(exportFormat))
+            {
+                // Can't set old root node parent unfortunately...
+                var oldRootNode = scene.RootNode;
+                var newRootNode = new Node("Root");
+                newRootNode.Children.Add(oldRootNode);
+                scene.RootNode = newRootNode;
+            }
+
+            if (Context.ExportFile(scene, outPath, exportFormat, ExportFlags))
+            {
+                LogModel($"Converted: {outName}");
+            }
+            else
+            {
+                LogModel($"Failed: {outName}");
+            }
+        }
+
+        private void ExportTextures(TPF tpf, string outFolder)
+        {
+            if (tpf.Textures.Count > 1)
+            {
+                Directory.CreateDirectory(outFolder);
+            }
+
+            foreach (var texture in tpf.Textures)
+            {
+                string outName = $"{texture.Name}.dds";
+                string outPath = PathHandler.Combine(outFolder, outName);
+                if (!ReplaceExistingFiles && File.Exists(outPath))
+                    continue;
+
+                string? createFolder = Path.GetDirectoryName(outPath);
+                if (!string.IsNullOrWhiteSpace(createFolder))
+                    Directory.CreateDirectory(createFolder);
+
+                byte[] bytes;
+                if (tpf.Platform == TPF.TPFPlatform.PC)
+                {
+                    bytes = texture.Bytes;
+                }
+                else
+                {
+                    bytes = texture.Headerize();
                 }
 
-                if (Config.OutputTexturesFound)
-                {
-                    Output($"Extracted TPF {PathHandler.GetWithoutExtensions(fileName)}");
-                }
+                File.WriteAllBytes(outPath, bytes);
+                LogTexture($"Extracted: {outName}");
+            }
+        }
+
+        #endregion
+
+        #region Try Read
+
+        private bool TryReadBinder(Stream stream, [NotNullWhen(true)] out IBinder? binder)
+        {
+            if (SearchForBND3 && BND3.IsRead(stream, out BND3 bnd3))
+            {
+                binder = bnd3;
                 return true;
             }
+            else if (SearchForBND4 && BND4.IsRead(stream, out BND4 bnd4))
+            {
+                binder = bnd4;
+                return true;
+            }
+
+            binder = null;
             return false;
         }
 
-        /// <summary>
-        /// Output something to valid logging locations.
-        /// </summary>
-        /// <param name="value">The value to output.</param>
-        void Output(string value)
+        private bool TryReadSplitBinder(Stream stream, string name, TryFindStream tryFind, [NotNullWhen(true)] out IBinder? binder)
         {
-            if (Config.OutputToConsole)
+            if (!SearchForBXF3 && !SearchForBXF4)
             {
-                WriteLine(value);
+                binder = null;
+                return false;
             }
 
-            if (Config.OutputToLog)
+            if (name.Contains("bhd"))
             {
-                Log.Add(value);
-            }
-        }
-
-        /// <summary>
-        /// Write the log to a file in the provided folder.
-        /// </summary>
-        /// <param name="folder">The folder to write the log to.</param>
-        public void WriteLogToFolder(string folder)
-            => File.WriteAllLines(PathHandler.Combine(folder, $"log-{DateTime.Now:MMddyyyy-hhmmss}.txt"), Log);
-
-        /// <summary>
-        /// Write the log to the provided path.
-        /// </summary>
-        /// <param name="path">The path to write the log to.</param>
-        public void WriteLogToPath(string path)
-            => File.WriteAllLines(path, Log);
-
-        /// <summary>
-        /// Disposes the converter.
-        /// </summary>
-        /// <param name="disposing">Whether or not to dispose.</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!IsDisposed)
-            {
-                if (disposing)
+                string dataName = name.Replace("bhd", "bdt");
+                if (SearchForBXF3 && BXF3.IsHeader(stream))
                 {
-                    Context.Dispose();
+                    if (tryFind(dataName, out Stream? dataStream)
+                        && TryReadBXF3(stream, dataStream, name, out BXF3? result))
+                    {
+                        binder = result;
+                        return true;
+                    }
                 }
-
-                IsDisposed = true;
+                else if (SearchForBXF4 && BXF4.IsHeader(stream))
+                {
+                    if (tryFind(dataName, out Stream? dataStream)
+                        && TryReadBXF4(stream, dataStream, name, out BXF4? result))
+                    {
+                        binder = result;
+                        return true;
+                    }
+                }
             }
+
+            binder = null;
+            return false;
         }
 
-        public void Dispose()
+        private bool TryReadZero3(string path, [NotNullWhen(true)] out Zero3? result)
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            try
+            {
+                result = Zero3.Read(path);
+                return true;
+            }
+            catch
+            {
+                LogWarning($"Detected potential {nameof(Zero3)} but could not read it: {Path.GetFileName(path)}");
+            }
+
+            result = null;
+            return false;
         }
+
+        private bool TryReadBXF3(Stream header, Stream data, string name, [NotNullWhen(true)] out BXF3? result)
+        {
+            try
+            {
+                result = BXF3.Read(header, data);
+                return true;
+            }
+            catch
+            {
+                LogWarning($"Detected potential {nameof(BXF3)} but could not read it: {name}");
+            }
+
+            result = null;
+            return false;
+        }
+
+        private bool TryReadBXF4(Stream header, Stream data, string name, [NotNullWhen(true)] out BXF4? result)
+        {
+            try
+            {
+                result = BXF4.Read(header, data);
+                return true;
+            }
+            catch
+            {
+                LogWarning($"Detected potential {nameof(BXF4)} but could not read it: {name}");
+            }
+
+            result = null;
+            return false;
+        }
+
+        #endregion
+
+        #region Try Find
+
+        private static bool TryFindStreamInBinder(IBinder binder, string name, [NotNullWhen(true)] out Stream? result)
+        {
+            foreach (var file in binder.Files)
+            {
+                if (file.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    result = new MemoryStream(file.Bytes, false);
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        private static bool TryFindStreamInZero3(Zero3 archive, string name, [NotNullWhen(true)] out Stream? result)
+        {
+            foreach (var file in archive.Files)
+            {
+                if (file.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    result = new MemoryStream(file.Bytes, false);
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        private static bool TryFindStreamFromPath(string path, [NotNullWhen(true)] out Stream? result)
+        {
+            if (File.Exists(path))
+            {
+                result = File.OpenRead(path);
+                return true;
+            }
+
+            result = null;
+            return false;
+        }
+
+        #endregion
+
+        #region Helpers
+
+        private static Stream GetDecompressedStream(Stream stream)
+        {
+            if (DCX.Is(stream))
+            {
+                Stream newStream = new MemoryStream(DCX.Decompress(stream), false);
+                stream.Dispose();
+                return newStream;
+            }
+
+            return stream;
+        }
+
+        private static MemoryStream GetDecompressedStream(byte[] bytes)
+        {
+            if (DCX.Is(bytes))
+            {
+                return new MemoryStream(DCX.Decompress(bytes), false);
+            }
+
+            return new MemoryStream(bytes, false);
+        }
+
+        private string GetOutputFolder(string folder)
+        {
+            string outputFolder;
+            if (UseRootFolder && !string.IsNullOrEmpty(RootFolder) && !string.IsNullOrEmpty(RootFolderOverride))
+            {
+                outputFolder = folder.Replace(RootFolder, RootFolderOverride);
+            }
+            else
+            {
+                outputFolder = folder;
+            }
+
+            return outputFolder;
+        }
+
+        private string GetExportFormat()
+        {
+            string format = ExportFormat;
+            if (!FormatCache.IsSupportedExportFormat(format))
+            {
+                format = format switch
+                {
+                    "dae" => "collada",
+                    _ => "fbx",
+                };
+            }
+
+            return format;
+        }
+
+        private static void CopyImportToExportLocation(Stream import, string outPath)
+        {
+            using var fs = File.OpenWrite(outPath);
+            import.CopyTo(fs);
+        }
+
+        #endregion
+
+        #region Logging Methods
+
+        private void LogModel(string value)
+        {
+            if (LogModelsExported)
+                Logger.WriteLine(value);
+        }
+
+        private void LogTexture(string value)
+        {
+            if (LogTexturesExported)
+                Logger.WriteLine(value);
+        }
+
+        private void LogModelCopied(string value)
+        {
+            if (LogModelsCopied)
+                Logger.WriteLine(value);
+        }
+
+        private void LogTextureCopied(string value)
+        {
+            if (LogTexturesCopied)
+                Logger.WriteLine(value);
+        }
+
+        private void LogWarning(string value)
+        {
+            if (LogWarnings)
+                Logger.WriteLine(value);
+        }
+
+        private void LogError(string value)
+        {
+            if (LogErrors)
+                Logger.WriteLine(value);
+        }
+
+        #endregion
+
+        #region Delegates
+
+        private delegate bool TryFindStream(string name, [NotNullWhen(true)] out Stream? result);
+
+        #endregion
     }
 }

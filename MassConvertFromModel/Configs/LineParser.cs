@@ -1,9 +1,9 @@
-﻿namespace MassConvertFromModel
+﻿namespace MassConvertFromModel.Configs
 {
     /// <summary>
     /// A parser for simple line reading while cleaning comments.
     /// </summary>
-    public static class LineParser
+    internal static class LineParser
     {
         /// <summary>
         /// Parse a single line in a config and clean it of unnecessary things.
