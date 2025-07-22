@@ -1,13 +1,15 @@
 ﻿#if DEBUG
-//#define DEBUG_DISABLE_TRY_CATCH
+#define DEBUG_DISABLE_TRY_CATCH
 //#define TEST_MODE
 #endif
 
-using MassConvertFromModel.Handlers;
 using FromAssimp;
-using System.Diagnostics;
-using MassConvertFromModel.Loggers;
 using MassConvertFromModel.Configs;
+using MassConvertFromModel.Handlers;
+using MassConvertFromModel.Loggers;
+using System;
+using System.Diagnostics;
+using System.IO;
 
 namespace MassConvertFromModel
 {

@@ -1,4 +1,8 @@
-﻿namespace MassConvertFromModel.Handlers
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace MassConvertFromModel.Handlers
 {
     /// <summary>
     /// Handles processing and cleaning string paths.

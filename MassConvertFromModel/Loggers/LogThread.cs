@@ -1,5 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace MassConvertFromModel.Loggers
 {
@@ -29,7 +31,7 @@ namespace MassConvertFromModel.Loggers
               {
                   while (true)
                       while (Queue.Count > 0)
-                        WriteEvent?.Invoke(this, Queue.Take());
+                          WriteEvent?.Invoke(this, Queue.Take());
               })
             {
                 IsBackground = true

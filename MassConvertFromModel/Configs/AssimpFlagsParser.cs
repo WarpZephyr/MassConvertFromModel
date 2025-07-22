@@ -1,4 +1,5 @@
 ﻿using Assimp;
+using System.IO;
 
 namespace MassConvertFromModel.Configs
 {

@@ -1,6 +1,6 @@
 ﻿#if DEBUG
-//#define DEBUG_DISABLE_TRY_CATCH
-//#define DEBUG_THROW_ON_FAILED_CONVERT
+#define DEBUG_DISABLE_TRY_CATCH
+#define DEBUG_THROW_ON_FAILED_CONVERT
 #endif
 
 using Assimp;
@@ -8,7 +8,11 @@ using FromAssimp;
 using MassConvertFromModel.Handlers;
 using MassConvertFromModel.Loggers;
 using SoulsFormats;
+using SoulsFormats.Other;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace MassConvertFromModel
 {
@@ -379,16 +383,16 @@ namespace MassConvertFromModel
                     LogWarning($"Export file name length may be too long: {outPath.Length}");
 
                 Scene scene;
-                if (SearchForFlver2 && FLVER2.IsRead(stream, out FLVER2 flver2))
-                    scene = Context.ImportFileFromFlver2(flver2);
-                else if (SearchForFlver0 && FLVER0.IsRead(stream, out FLVER0 flver0))
-                    scene = Context.ImportFileFromFlver0(flver0);
-                else if (SearchForMdl4 && MDL4.IsRead(stream, out MDL4 mdl4))
-                    scene = Context.ImportFileFromMdl4(mdl4);
-                else if (SearchForSmd4 && SMD4.IsRead(stream, out SMD4 smd4))
-                    scene = Context.ImportFileFromSmd4(smd4);
-                else
-                    return false;
+            if (SearchForFlver2 && FLVER2.IsRead(stream, out FLVER2 flver2))
+                scene = Context.ImportFileFromFlver2(flver2);
+            else if (SearchForFlver0 && FLVER0.IsRead(stream, out FLVER0 flver0))
+                scene = Context.ImportFileFromFlver0(flver0);
+            else if (SearchForMdl4 && MDL4.IsRead(stream, out MDL4 mdl4))
+                scene = Context.ImportFileFromMdl4(mdl4);
+            else if (SearchForSmd4 && SMD4.IsRead(stream, out SMD4 smd4))
+                scene = Context.ImportFileFromSmd4(smd4);
+            else
+                return false;
 
                 string? createFolder = Path.GetDirectoryName(outPath);
                 if (string.IsNullOrWhiteSpace(createFolder))
