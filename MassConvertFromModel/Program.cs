@@ -1,5 +1,5 @@
 ﻿#if DEBUG
-#define DEBUG_DISABLE_TRY_CATCH
+//#define DEBUG_DISABLE_TRY_CATCH
 //#define TEST_MODE
 #endif
 

@@ -1,6 +1,6 @@
 ﻿#if DEBUG
-#define DEBUG_DISABLE_TRY_CATCH
-#define DEBUG_THROW_ON_FAILED_CONVERT
+//#define DEBUG_DISABLE_TRY_CATCH
+//#define DEBUG_THROW_ON_FAILED_CONVERT
 #endif
 
 using Assimp;
