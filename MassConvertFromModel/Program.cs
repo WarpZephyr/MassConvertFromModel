@@ -129,6 +129,7 @@ namespace MassConvertFromModel
             converter.SearchForTpf = config.SearchForTextures;
             converter.RecursiveSearch = config.BinderRecursiveSearch;
             converter.ReplaceExistingFiles = config.ReplaceExistingFiles;
+            converter.FixRootNode = config.FixRootNode;
             converter.LogModelsExported = true; // TODO
             converter.LogTexturesExported = config.OutputTexturesFound;
             converter.LogModelsCopied = true; // TODO

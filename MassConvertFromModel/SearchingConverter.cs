@@ -188,6 +188,7 @@ namespace MassConvertFromModel
             SearchForZero3 = true;
             RecursiveSearch = true;
             ReplaceExistingFiles = true;
+            FixRootNode = true;
             UseRootFolder = false;
             CopyImport = false;
             LogModelsExported = enableLogging;
